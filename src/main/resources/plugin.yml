@@ -1,0 +1,4 @@
+name: VanillaMinimaps
+version: '${version}'
+main: com.jnngl.vanillaminimaps.VanillaMinimaps
+api-version: '1.20'
