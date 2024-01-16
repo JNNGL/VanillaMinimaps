@@ -18,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -86,6 +87,13 @@ public class MinimapListener implements Listener {
     }
   }
 
+  private void respawnMinimap(Minimap minimap) {
+    MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
+    packetSender.despawnMinimap(minimap);
+    packetSender.spawnMinimap(minimap);
+    updateMinimap(minimap);
+  }
+
   @EventHandler
   public void onMove(PlayerMoveEvent event) {
     if (!event.hasChangedPosition()) {
@@ -107,10 +115,17 @@ public class MinimapListener implements Listener {
       return;
     }
 
-    MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
-    packetSender.despawnMinimap(minimap);
-    packetSender.spawnMinimap(minimap);
-    updateMinimap(minimap);
+    respawnMinimap(minimap);
+  }
+
+  @EventHandler
+  public void onWorldChange(PlayerChangedWorldEvent event) {
+    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    if (minimap == null) {
+      return;
+    }
+
+    respawnMinimap(minimap);
   }
 
   @EventHandler
