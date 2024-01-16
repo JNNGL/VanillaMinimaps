@@ -55,7 +55,6 @@ public class MinimapListener implements Listener {
 
       Minimap minimap = minimapFactory.createMinimap(player, new WorldMinimapLayerRenderer());
       packetSender.spawnMinimap(minimap);
-      updateMinimap(minimap);
 
       playerMinimaps.put(player, minimap);
 
@@ -64,6 +63,8 @@ public class MinimapListener implements Listener {
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);
+
+      updateMinimap(minimap);
     });
   }
 
@@ -87,6 +88,10 @@ public class MinimapListener implements Listener {
 
   @EventHandler
   public void onMove(PlayerMoveEvent event) {
+    if (!event.hasChangedPosition()) {
+      return;
+    }
+
     Minimap minimap = playerMinimaps.get(event.getPlayer());
     if (minimap == null) {
       return;
@@ -105,6 +110,7 @@ public class MinimapListener implements Listener {
     MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
     packetSender.despawnMinimap(minimap);
     packetSender.spawnMinimap(minimap);
+    updateMinimap(minimap);
   }
 
   @EventHandler
