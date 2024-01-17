@@ -3,6 +3,7 @@ package com.jnngl.vanillaminimaps.map.renderer.encoder;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 public class SecondaryMapEncoder {
 
@@ -14,22 +15,34 @@ public class SecondaryMapEncoder {
     double positionX = 0;
     double positionZ = 0;
     if (layer.isTrackLocation()) {
-      trackedZ = location.getBlockX() - layer.getPositionX();
+      trackedZ = location.getBlockX() - layer.getPositionX(); // (Not a typo)
       trackedX = location.getBlockZ() - layer.getPositionZ();
       positionX = location.getX() - location.getBlockX();
       positionZ = location.getZ() - location.getBlockZ();
+      if (layer.isKeepOnEdge()) {
+        Vector direction = new Vector(trackedX, 0, trackedZ);
+        if (direction.lengthSquared() > 60 * 60) {
+          direction.normalize();
+          direction.multiply(60);
+          trackedX = direction.getBlockX();
+          trackedZ = direction.getBlockZ();
+          positionX = direction.getZ() - trackedZ;
+          positionZ = direction.getX() - trackedX;
+        }
+      }
       trackedX += 64;
       trackedZ += 64;
     }
 
     PrimaryMapEncoder.encodePrimaryLayer(positionX, positionZ, data);
     Location position = new Location(location.getWorld(), layer.getPositionX(), location.getY(), layer.getPositionZ());
-    boolean tracked = !layer.isTrackLocation() || location.distanceSquared(position) < 64 * 64;
+    boolean tracked = !layer.isTrackLocation() || layer.isKeepOnEdge() || location.distanceSquared(position) < 64 * 64;
     if (tracked && trackedX >= 0 && trackedX < 128 && trackedZ >= 0 && trackedZ < 128) {
       MapEncoderUtils.encodeFixedPoint(data, 1, 1, layer.getDepth());
       MapEncoderUtils.encodeFixedPoint(data, 9, 1, trackedX / 128.0);
       data[128 * 2] = (byte) 4;
       MapEncoderUtils.encodeFixedPoint(data, 1, 2, trackedZ / 128.0);
+      data[128 * 2 + 9] = layer.isKeepOnEdge() ? (byte) 4 : (byte) 0;
     } else {
       data[128 * 2] = (byte) 0;
     }

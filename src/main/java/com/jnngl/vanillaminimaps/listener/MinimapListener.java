@@ -15,17 +15,17 @@ import com.jnngl.vanillaminimaps.map.renderer.encoder.SecondaryMapEncoder;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +38,7 @@ public class MinimapListener implements Listener {
   }
 
   private static final MinimapIcon PLAYER_ICON = loadIcon("/minimap/player.png");
+  private static final MinimapIcon DEATH_ICON = loadIcon("/minimap/death.png");
 
   @Getter
   private final Map<Player, Minimap> playerMinimaps = new HashMap<>();
@@ -60,7 +61,7 @@ public class MinimapListener implements Listener {
       playerMinimaps.put(player, minimap);
 
       MinimapLayer playerIconBaseLayer = minimapFactory.createMinimapLayer(player.getWorld(), null);
-      SecondaryMinimapLayer playerIconLayer = new SecondaryMinimapLayer(playerIconBaseLayer, new MinimapIconRenderer(PLAYER_ICON), false, 64, 64, 0.1F);
+      SecondaryMinimapLayer playerIconLayer = new SecondaryMinimapLayer(playerIconBaseLayer, new MinimapIconRenderer(PLAYER_ICON), false, false, 64, 64, 0.1F);
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);
@@ -92,6 +93,30 @@ public class MinimapListener implements Listener {
     packetSender.despawnMinimap(minimap);
     packetSender.spawnMinimap(minimap);
     updateMinimap(minimap);
+  }
+
+  @EventHandler
+  public void onDeath(PlayerDeathEvent event) {
+    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    if (minimap == null) {
+      return;
+    }
+
+    Player player = event.getPlayer();
+    ClientsideMinimapFactory minimapFactory = plugin.getDefaultClientsideMinimapFactory();
+    MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
+
+    SecondaryMinimapLayer currentDeathPoint = minimap.secondaryLayers().get("death_point");
+    if (currentDeathPoint != null) {
+      packetSender.despawnLayer(player, currentDeathPoint.getBaseLayer());
+    }
+
+    Location deathLocation = event.getPlayer().getLocation();
+    MinimapLayer iconBaseLayer = minimapFactory.createMinimapLayer(player.getWorld(), null);
+    SecondaryMinimapLayer iconLayer = new SecondaryMinimapLayer(iconBaseLayer, new MinimapIconRenderer(DEATH_ICON), true, true, deathLocation.getBlockX(), deathLocation.getBlockZ(), 0.05F);
+    minimap.secondaryLayers().put("death_point", iconLayer);
+
+    packetSender.spawnLayer(player, iconBaseLayer);
   }
 
   @EventHandler

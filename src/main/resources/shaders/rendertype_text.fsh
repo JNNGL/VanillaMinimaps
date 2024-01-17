@@ -16,6 +16,7 @@ in vec2 texCoord0;
 in vec2 texCoord1;
 in vec2 texCoord2;
 in float minimap;
+in float keepEdges;
 
 out vec4 fragColor;
 
@@ -23,9 +24,9 @@ void main() {
     if (minimap == 1.0 || minimap == 2.0) {
         vec2 uvn11 = texCoord2 * 2.0 - 1.0;
         float dist = dot(uvn11, uvn11);
-        if (dist < 0.96) {
+        if (dist < 0.89 || keepEdges == 1.0) {
             fragColor = texture(Sampler0, texCoord1) * vertexColor * ColorModulator;
-        } else if (dist < 1.0) {
+        } else if (dist < 0.93 && minimap == 1.0) {
             fragColor = vec4(0.1);
             fragColor.a = 1.0;
         } else {

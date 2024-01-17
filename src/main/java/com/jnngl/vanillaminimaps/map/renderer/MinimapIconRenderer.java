@@ -4,6 +4,7 @@ import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
 import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapLayerRenderer {
 
@@ -15,6 +16,14 @@ public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapL
     if (layer.isTrackLocation()) {
       trackedZ = location.getBlockX() - layer.getPositionX();
       trackedX = location.getBlockZ() - layer.getPositionZ();
+      if (layer.isKeepOnEdge()) {
+        Vector direction = new Vector(trackedX, 0, trackedZ);
+        if (direction.lengthSquared() > 60 * 60) {
+          direction.normalize().multiply(60);
+          trackedX = direction.getBlockX();
+          trackedZ = direction.getBlockZ();
+        }
+      }
       trackedX += 64;
       trackedZ += 64;
     }

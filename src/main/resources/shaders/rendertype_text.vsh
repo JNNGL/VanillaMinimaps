@@ -23,6 +23,7 @@ out vec2 texCoord0;
 out vec2 texCoord1;
 out vec2 texCoord2;
 out float minimap;
+out float keepEdges;
 
 mat2 mat2_rotate_z(float radians) {
     return mat2(
@@ -54,6 +55,7 @@ void main() {
     vertexDistance = length((ModelViewMat * vertex).xyz);
 
     minimap = 0.0;
+    keepEdges = 0.0;
     vec2 uv = UV0;
     vec2 uv2 = vec2(0.0);
 
@@ -64,10 +66,10 @@ void main() {
         if (vratio < ratio) ratio = 1;
         else vratio = 1;
         switch (vertexId) {
-            case 0: { gl_Position = vec4(-1 + 0.05 * vratio, 1 - 0.05 * ratio, 0, 1); uv2 = vec2(0, 1); break; }
-            case 1: { gl_Position = vec4(-1 + 0.05 * vratio, 1 - 0.66 * ratio, 0, 1); uv2 = vec2(0, 0); break; }
-            case 2: { gl_Position = vec4(-1 + 0.66 * vratio, 1 - 0.66 * ratio, 0, 1); uv2 = vec2(1, 0); break; }
-            case 3: { gl_Position = vec4(-1 + 0.66 * vratio, 1 - 0.05 * ratio, 0, 1); uv2 = vec2(1, 1); break; }
+            case 0: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.04 * ratio, 0, 1); uv2 = vec2(0, 1); break; }
+            case 1: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.70 * ratio, 0, 1); uv2 = vec2(0, 0); break; }
+            case 2: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.70 * ratio, 0, 1); uv2 = vec2(1, 0); break; }
+            case 3: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.04 * ratio, 0, 1); uv2 = vec2(1, 1); break; }
         }
 
         vec3 local = IViewRotMat * vec3(1, 0, 0);
@@ -102,6 +104,8 @@ void main() {
                 vcolor = vec4(0.0);
             }
 
+            bool keep = sign(length(texture(Sampler0, vec2(texel * 9., texel * 2)).xyz)) > 0;
+            keepEdges = keep ? 1.0 : 0.0;
             minimap = 2.0;
         }
     }

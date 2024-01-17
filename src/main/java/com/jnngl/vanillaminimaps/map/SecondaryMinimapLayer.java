@@ -13,6 +13,7 @@ public class SecondaryMinimapLayer {
   private final MinimapLayer baseLayer;
   private final SecondaryMinimapLayerRenderer renderer;
   private boolean trackLocation;
+  private boolean keepOnEdge;
   private int positionX;
   private int positionZ;
   private float depth;
