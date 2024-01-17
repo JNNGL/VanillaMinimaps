@@ -49,32 +49,31 @@ public class WorldMinimapLayerRenderer implements MinimapLayerRenderer {
   @Override
   public void render(Minimap minimap, MinimapLayer layer, byte[] data) {
     Player player = minimap.holder();
-    Location location = player.getLocation();
     Level world = ((CraftWorld) player.getWorld()).getHandle();
 
-    int i = 1;
-    int j = 64;
-    int k = 64;
-    int l = Mth.floor(player.getX() - (double)j) / i + 64;
-    int i1 = Mth.floor(player.getZ() - (double)k) / i + 64;
+    // From Minecraft code
+    int width = 64;
+    int height = 64;
+    int playerX = Mth.floor(player.getX() - (double) width) + 64;
+    int playerZ = Mth.floor(player.getZ() - (double) height) + 64;
 
-    BlockPos.MutableBlockPos blockposition_mutableblockposition = new BlockPos.MutableBlockPos();
-    BlockPos.MutableBlockPos blockposition_mutableblockposition1 = new BlockPos.MutableBlockPos();
+    BlockPos.MutableBlockPos blockPos1 = new BlockPos.MutableBlockPos();
+    BlockPos.MutableBlockPos blockPos2 = new BlockPos.MutableBlockPos();
 
-    for(int k1 = 0; k1 < 128; ++k1) {
+    for (int x = 0; x < 128; ++x) {
       double d0 = 0.0;
 
-      for(int l1 = 0; l1 < 128; ++l1) {
-        int j2 = (k1 - 64) + l;
-        int k2 = (l1 - 64) + i1;
+      for (int z = 0; z < 128; ++z) {
+        int worldX = (x - 64) + playerX;
+        int worldZ = (z - 64) + playerZ;
         Multiset<MapColor> multiset = LinkedHashMultiset.create();
-        LevelChunk chunk = world.getChunkIfLoaded(SectionPos.blockToSectionCoord(j2), SectionPos.blockToSectionCoord(k2));
+        LevelChunk chunk = world.getChunkIfLoaded(SectionPos.blockToSectionCoord(worldX), SectionPos.blockToSectionCoord(worldZ));
         if (chunk != null && !chunk.isEmpty()) {
           int l2 = 0;
           double d1 = 0.0;
           int i3;
           if (world.dimensionType().hasCeiling()) {
-            i3 = j2 + k2 * 231871;
+            i3 = worldX + worldZ * 231871;
             i3 = i3 * i3 * 31287121 + i3 * 11;
             if ((i3 >> 20 & 1) == 0) {
               multiset.add(Blocks.DIRT.defaultBlockState().getMapColor(world, BlockPos.ZERO), 10);
@@ -84,89 +83,66 @@ public class WorldMinimapLayerRenderer implements MinimapLayerRenderer {
 
             d1 = 100.0;
           } else {
-            for(i3 = 0; i3 < i; ++i3) {
-              for(int j3 = 0; j3 < i; ++j3) {
-                blockposition_mutableblockposition.set(j2 + i3, 0, k2 + j3);
-                int k3 = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, blockposition_mutableblockposition.getX(), blockposition_mutableblockposition.getZ()) + 1;
-                BlockState iblockdata;
-                if (k3 <= world.getMinBuildHeight() + 1) {
-                  iblockdata = Blocks.BEDROCK.defaultBlockState();
-                } else {
-                  do {
-                    --k3;
-                    blockposition_mutableblockposition.setY(k3);
-                    iblockdata = chunk.getBlockState(blockposition_mutableblockposition);
-                  } while(iblockdata.getMapColor(world, blockposition_mutableblockposition) == MapColor.NONE && k3 > world.getMinBuildHeight());
+            blockPos1.set(worldX, 0, worldZ);
+            int k3 = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, blockPos1.getX(), blockPos1.getZ()) + 1;
+            BlockState blockState;
+            if (k3 <= world.getMinBuildHeight() + 1) {
+              blockState = Blocks.BEDROCK.defaultBlockState();
+            } else {
+              do {
+                --k3;
+                blockPos1.setY(k3);
+                blockState = chunk.getBlockState(blockPos1);
+              } while (blockState.getMapColor(world, blockPos1) == MapColor.NONE && k3 > world.getMinBuildHeight());
 
-                  if (k3 > world.getMinBuildHeight() && !iblockdata.getFluidState().isEmpty()) {
-                    int l3 = k3 - 1;
-                    blockposition_mutableblockposition1.set(blockposition_mutableblockposition);
+              if (k3 > world.getMinBuildHeight() && !blockState.getFluidState().isEmpty()) {
+                int l3 = k3 - 1;
+                blockPos2.set(blockPos1);
 
-                    BlockState iblockdata1;
-                    do {
-                      blockposition_mutableblockposition1.setY(l3--);
-                      iblockdata1 = chunk.getBlockState(blockposition_mutableblockposition1);
-                      ++l2;
-                    } while(l3 > world.getMinBuildHeight() && !iblockdata1.getFluidState().isEmpty());
+                BlockState iblockdata1;
+                do {
+                  blockPos2.setY(l3--);
+                  iblockdata1 = chunk.getBlockState(blockPos2);
+                  ++l2;
+                } while (l3 > world.getMinBuildHeight() && !iblockdata1.getFluidState().isEmpty());
 
-                    iblockdata = this.getCorrectStateForFluidBlock(world, iblockdata, blockposition_mutableblockposition);
-                  }
-                }
-
-                d1 += (double)k3 / (double)(i * i);
-                multiset.add(iblockdata.getMapColor(world, blockposition_mutableblockposition));
+                blockState = this.getCorrectStateForFluidBlock(world, blockState, blockPos1);
               }
             }
+
+            d1 += k3;
+            multiset.add(blockState.getMapColor(world, blockPos1));
           }
 
-          l2 /= i * i;
-          MapColor materialmapcolor = (MapColor)Iterables.getFirst(Multisets.copyHighestCountFirst(multiset), MapColor.NONE);
+          MapColor mapColor = Iterables.getFirst(Multisets.copyHighestCountFirst(multiset), MapColor.NONE);
           double d2;
-          MapColor.Brightness materialmapcolor_a;
-          if (materialmapcolor == MapColor.WATER) {
-            d2 = (double)l2 * 0.1 + (double)(k1 + l1 & 1) * 0.2;
+          MapColor.Brightness brightness;
+          if (mapColor == MapColor.WATER) {
+            d2 = (double) l2 * 0.1 + (double) (x + z & 1) * 0.2;
             if (d2 < 0.5) {
-              materialmapcolor_a = MapColor.Brightness.HIGH;
+              brightness = MapColor.Brightness.HIGH;
             } else if (d2 > 0.9) {
-              materialmapcolor_a = MapColor.Brightness.LOW;
+              brightness = MapColor.Brightness.LOW;
             } else {
-              materialmapcolor_a = MapColor.Brightness.NORMAL;
+              brightness = MapColor.Brightness.NORMAL;
             }
           } else {
-            d2 = (d1 - d0) * 4.0 / (double)(i + 4) + ((double)(k1 + l1 & 1) - 0.5) * 0.4;
+            d2 = (d1 - d0) * 4.0 / (double) 5 + ((double) (x + z & 1) - 0.5) * 0.4;
             if (d2 > 0.6) {
-              materialmapcolor_a = MapColor.Brightness.HIGH;
+              brightness = MapColor.Brightness.HIGH;
             } else if (d2 < -0.6) {
-              materialmapcolor_a = MapColor.Brightness.LOW;
+              brightness = MapColor.Brightness.LOW;
             } else {
-              materialmapcolor_a = MapColor.Brightness.NORMAL;
+              brightness = MapColor.Brightness.NORMAL;
             }
           }
 
           d0 = d1;
-          int index = (127 - l1) * 128 + (127 - k1);
-          data[index] = materialmapcolor.getPackedId(materialmapcolor_a);
+          int index = (127 - z) * 128 + (127 - x);
+          data[index] = mapColor.getPackedId(brightness);
         }
       }
     }
-
-//    for (int x = -64; x < 64; x++) {
-//      for (int z = -64; z < 64; z++) {
-//        int worldX = location.getBlockX() + x;
-//        int worldZ = location.getBlockZ() + z;
-//        int index = (127 - z - 64) * 128 + (127 - x - 64);
-//        Block block = world.getHighestBlockAt(worldX, worldZ);
-//        LevelAccessor accessor = ((CraftBlock) block).getHandle();
-//        BlockState state = ((CraftBlockData) block.getBlockData()).getState();
-//        MapColor color = state.getMapColor(accessor, new BlockPos(block.getX(), block.getY(), block.getZ()));
-//        int brightnessId = (block.getLightLevel() >> 2) - 1;
-//        if (brightnessId < 0) {
-//          brightnessId = 3;
-//        }
-//        MapColor.Brightness brightness = MapColor.Brightness.byId(brightnessId);
-//        data[index] = color.getPackedId(brightness);
-//      }
-//    }
   }
 
   private BlockState getCorrectStateForFluidBlock(Level world, BlockState state, BlockPos pos) {
