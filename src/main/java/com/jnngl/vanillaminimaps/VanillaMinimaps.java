@@ -22,8 +22,12 @@ import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSMinimapPacketSender;
 import com.jnngl.vanillaminimaps.injection.PassengerRewriter;
+import com.jnngl.vanillaminimaps.listener.MinimapBlockListener;
 import com.jnngl.vanillaminimaps.listener.MinimapListener;
 import com.jnngl.vanillaminimaps.map.Minimap;
+import com.jnngl.vanillaminimaps.map.renderer.world.VanillaWorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
@@ -54,16 +58,31 @@ public final class VanillaMinimaps extends JavaPlugin implements Listener {
 
   @Getter
   @MonotonicNonNull
+  private WorldMinimapRenderer defaultWorldRenderer;
+
+  @Getter
+  @MonotonicNonNull
+  private MinimapBlockListener minimapBlockListener;
+
+  @Getter
+  @MonotonicNonNull
   private MinimapListener minimapListener;
 
   @Override
   public void onEnable() {
     defaultClientsideMinimapFactory = new NMSClientsideMinimapFactory();
     defaultMinimapPacketSender = new NMSMinimapPacketSender(this);
+    defaultWorldRenderer = new VanillaWorldMinimapRenderer();
+    minimapBlockListener = new MinimapBlockListener(this);
     minimapListener = new MinimapListener(this);
+
+    if (defaultWorldRenderer instanceof CacheableWorldMinimapRenderer cacheable) {
+      minimapBlockListener.registerCache(cacheable.getWorldMapCache());
+    }
 
     Bukkit.getPluginManager().registerEvents(this, this);
     Bukkit.getPluginManager().registerEvents(minimapListener, this);
+    minimapBlockListener.registerListener(this);
   }
 
   public PassengerRewriter getPassengerRewriter(Player player) {

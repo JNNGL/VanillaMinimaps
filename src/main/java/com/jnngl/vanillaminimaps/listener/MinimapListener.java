@@ -25,10 +25,15 @@ import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
+import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
-import com.jnngl.vanillaminimaps.map.renderer.WorldMinimapLayerRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.encoder.PrimaryMapEncoder;
 import com.jnngl.vanillaminimaps.map.renderer.encoder.SecondaryMapEncoder;
+import com.jnngl.vanillaminimaps.map.renderer.world.cache.WorldMapCache;
+import it.unimi.dsi.fastutil.ints.IntIntImmutablePair;
+import it.unimi.dsi.fastutil.longs.LongList;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
@@ -59,6 +64,7 @@ public class MinimapListener implements Listener {
 
   @Getter
   private final Map<Player, Minimap> playerMinimaps = new HashMap<>();
+  private final Map<Player, IntIntImmutablePair> playerSections = new HashMap<>();
   private final VanillaMinimaps plugin;
 
   public MinimapListener(VanillaMinimaps plugin) {
@@ -72,7 +78,8 @@ public class MinimapListener implements Listener {
       ClientsideMinimapFactory minimapFactory = plugin.getDefaultClientsideMinimapFactory();
       MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
 
-      Minimap minimap = minimapFactory.createMinimap(player, new WorldMinimapLayerRenderer());
+      WorldMinimapRenderer worldRenderer = plugin.getDefaultWorldRenderer();
+      Minimap minimap = minimapFactory.createMinimap(player, worldRenderer);
       packetSender.spawnMinimap(minimap);
 
       playerMinimaps.put(player, minimap);
@@ -82,14 +89,74 @@ public class MinimapListener implements Listener {
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);
+      
+      if (worldRenderer instanceof CacheableWorldMinimapRenderer cacheable) {
+        cacheable.getWorldMapCache().setCallback(player.getUniqueId(), area -> updateMinimap(minimap, player.getX(), player.getZ(), false));
+      }
 
-      updateMinimap(minimap);
+      updateMinimap(minimap, player.getX(), player.getZ(), true);
     });
   }
 
-  private void updateMinimap(Minimap minimap) {
+  private void updateMinimap(Minimap minimap, double playerX, double playerZ, boolean updateViewerKeys) {
     byte[] layer = new byte[128 * 128];
-    minimap.primaryLayer().renderer().render(minimap, minimap.primaryLayer(), layer);
+    MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
+    if (primaryRenderer instanceof CacheableWorldMinimapRenderer cacheableRenderer) {
+      int blockX = (int) Math.floor(playerX);
+      int blockZ = (int) Math.floor(playerZ);
+      int alignedTrackX = (blockX >> 7) << 7;
+      int alignedTrackZ = (blockZ >> 7) << 7;
+      Location location = minimap.holder().getLocation();
+      int alignedX = (location.getBlockX() >> 7) << 7;
+      int alignedZ = (location.getBlockZ() >> 7) << 7;
+      int offsetX = location.getBlockX() % 128;
+      int offsetZ = location.getBlockZ() % 128;
+      if (offsetX < 0) {
+        offsetX += 128;
+      }
+      if (offsetZ < 0) {
+        offsetZ += 128;
+      }
+      byte[] data = cacheableRenderer.getWorldMapCache().get(minimap.holder().getWorld(), alignedX, alignedZ);
+      byte[] dataRight = cacheableRenderer.getWorldMapCache().get(minimap.holder().getWorld(), alignedX + 128, alignedZ);
+      byte[] dataUpRight = cacheableRenderer.getWorldMapCache().get(minimap.holder().getWorld(), alignedX + 128, alignedZ + 128);
+      byte[] dataUp = cacheableRenderer.getWorldMapCache().get(minimap.holder().getWorld(), alignedX, alignedZ + 128);
+      LongList usedChunks = LongList.of(
+          WorldMapCache.getKey(minimap.holder().getWorld(), alignedTrackX, alignedTrackZ),
+          WorldMapCache.getKey(minimap.holder().getWorld(), alignedTrackX + 128, alignedTrackZ),
+          WorldMapCache.getKey(minimap.holder().getWorld(), alignedTrackX + 128, alignedTrackZ + 128),
+          WorldMapCache.getKey(minimap.holder().getWorld(), alignedTrackX, alignedTrackZ + 128)
+      );
+      for (int z = 0; z < 128; z++) {
+        for (int x = 0; x < 128; x++) {
+          int dataX = x - offsetX;
+          int dataZ = z - offsetZ;
+          byte[] buffer = data;
+
+          if (dataX < 0 && dataZ < 0) {
+            dataX += 128;
+            dataZ += 128;
+            buffer = dataUpRight;
+          } else if (dataX < 0) {
+            dataX += 128;
+            buffer = dataRight;
+          } else if (dataZ < 0) {
+            dataZ += 128;
+            buffer = dataUp;
+          }
+
+          if (dataX > 0 && dataZ > 0) {
+            layer[(127 - dataZ) * 128 + (127 - dataX)] = buffer[(127 - z) * 128 + (127 - x)];
+          }
+        }
+      }
+
+      if (updateViewerKeys) {
+        cacheableRenderer.getWorldMapCache().setViewerChunks(minimap.holder().getUniqueId(), usedChunks);
+      }
+    } else {
+      primaryRenderer.render(minimap, minimap.primaryLayer(), layer);
+    }
     PrimaryMapEncoder.encodePrimaryLayer(minimap, layer);
     plugin.getDefaultMinimapPacketSender().updateLayer(minimap.holder(), minimap.primaryLayer(), 0, 0, 128, 128, layer);
 
@@ -109,7 +176,7 @@ public class MinimapListener implements Listener {
     MinimapPacketSender packetSender = plugin.getDefaultMinimapPacketSender();
     packetSender.despawnMinimap(minimap);
     packetSender.spawnMinimap(minimap);
-    updateMinimap(minimap);
+    updateMinimap(minimap, minimap.holder().getX(), minimap.holder().getZ(), true);
   }
 
   @EventHandler
@@ -142,12 +209,26 @@ public class MinimapListener implements Listener {
       return;
     }
 
+    Location diff = event.getTo().clone().subtract(event.getFrom());
+    diff.setY(0.0);
+
+    if (diff.lengthSquared() == 0.0) {
+      return;
+    }
+
     Minimap minimap = playerMinimaps.get(event.getPlayer());
     if (minimap == null) {
       return;
     }
 
-    updateMinimap(minimap);
+    IntIntImmutablePair previous = playerSections.get(event.getPlayer());
+    int currentX = event.getTo().getBlockX() >> 7;
+    int currentZ = event.getTo().getBlockZ() >> 7;
+    boolean changedSection = previous == null || currentZ != previous.rightInt() || currentX != previous.leftInt();
+    updateMinimap(minimap, event.getTo().getX(), event.getTo().getZ(), changedSection);
+    if (changedSection) {
+      playerSections.put(event.getPlayer(), IntIntImmutablePair.of(currentX, currentZ));
+    }
   }
 
   @EventHandler
@@ -173,7 +254,12 @@ public class MinimapListener implements Listener {
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-      playerMinimaps.remove(event.getPlayer());
+      playerSections.remove(event.getPlayer());
+      Minimap minimap = playerMinimaps.remove(event.getPlayer());
+      MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
+      if (primaryRenderer instanceof CacheableWorldMinimapRenderer cacheableRenderer) {
+        cacheableRenderer.getWorldMapCache().releaseViewer(event.getPlayer().getUniqueId());
+      }
     });
   }
 }
