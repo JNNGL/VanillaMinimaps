@@ -40,7 +40,8 @@ public class MinimapBlockListener implements Listener {
           BlockFertilizeEvent.class, BlockFromToEvent.class, BlockGrowEvent.class, BlockIgniteEvent.class,
           BlockPistonExtendEvent.class, BlockPistonRetractEvent.class, BlockPlaceEvent.class,
           BlockRedstoneEvent.class, FluidLevelChangeEvent.class, LeavesDecayEvent.class, MoistureChangeEvent.class,
-          SculkBloomEvent.class, SpongeAbsorbEvent.class, TNTPrimeEvent.class);
+          SculkBloomEvent.class, SpongeAbsorbEvent.class, TNTPrimeEvent.class, EntityBlockFormEvent.class,
+          BlockFormEvent.class, BlockSpreadEvent.class);
 
   @Getter
   private final Set<WorldMapCache<?>> registeredCache = new HashSet<>();
