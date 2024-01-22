@@ -21,14 +21,22 @@ import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSMinimapPacketSender;
+import com.jnngl.vanillaminimaps.command.MinimapCommand;
+import com.jnngl.vanillaminimaps.command.NMSCommandDispatcherAccessor;
+import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.injection.PassengerRewriter;
 import com.jnngl.vanillaminimaps.listener.MinimapBlockListener;
 import com.jnngl.vanillaminimaps.listener.MinimapListener;
 import com.jnngl.vanillaminimaps.map.Minimap;
-import com.jnngl.vanillaminimaps.map.renderer.world.VanillaWorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.MinimapProvider;
+import com.jnngl.vanillaminimaps.map.icon.provider.BuiltinMinimapIconProvider;
+import com.jnngl.vanillaminimaps.map.icon.provider.MinimapIconProvider;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.provider.BuiltinMinimapWorldRendererProvider;
+import com.jnngl.vanillaminimaps.map.renderer.world.provider.MinimapWorldRendererProvider;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
@@ -40,25 +48,30 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class VanillaMinimaps extends JavaPlugin implements Listener {
+public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider, Listener {
 
   @Getter
   private final Map<Player, PassengerRewriter> passengerRewriters = new HashMap<>();
 
-  @Getter
   @MonotonicNonNull
   private ClientsideMinimapFactory defaultClientsideMinimapFactory;
 
-  @Getter
   @MonotonicNonNull
   private MinimapPacketSender defaultMinimapPacketSender;
 
-  @Getter
   @MonotonicNonNull
   private WorldMinimapRenderer defaultWorldRenderer;
+
+  @MonotonicNonNull
+  private MinimapIconProvider minimapIconProvider;
+
+  @MonotonicNonNull
+  private MinimapWorldRendererProvider worldRendererProvider;
 
   @Getter
   @MonotonicNonNull
@@ -69,12 +82,25 @@ public final class VanillaMinimaps extends JavaPlugin implements Listener {
   private MinimapListener minimapListener;
 
   @Override
+  @SneakyThrows
   public void onEnable() {
+    Path dataPath = getDataFolder().toPath();
+    Config.instance().reload(dataPath.resolve("config.yml"));
+
+    Path iconsPath = dataPath.resolve("icons");
+    Files.createDirectories(iconsPath);
+
     defaultClientsideMinimapFactory = new NMSClientsideMinimapFactory();
     defaultMinimapPacketSender = new NMSMinimapPacketSender(this);
-    defaultWorldRenderer = new VanillaWorldMinimapRenderer();
+    minimapIconProvider = new BuiltinMinimapIconProvider(iconsPath);
+    worldRendererProvider = new BuiltinMinimapWorldRendererProvider();
     minimapBlockListener = new MinimapBlockListener(this);
     minimapListener = new MinimapListener(this);
+
+    defaultWorldRenderer = worldRendererProvider.create(Config.instance().defaultMinimapRenderer);
+    if (defaultWorldRenderer == null) {
+      throw new IllegalArgumentException("default-world-renderer");
+    }
 
     if (defaultWorldRenderer instanceof CacheableWorldMinimapRenderer cacheable) {
       minimapBlockListener.registerCache(cacheable.getWorldMapCache());
@@ -83,12 +109,40 @@ public final class VanillaMinimaps extends JavaPlugin implements Listener {
     Bukkit.getPluginManager().registerEvents(this, this);
     Bukkit.getPluginManager().registerEvents(minimapListener, this);
     minimapBlockListener.registerListener(this);
+
+    new MinimapCommand(this).register(NMSCommandDispatcherAccessor.vanillaDispatcher());
+  }
+
+  @Override
+  public ClientsideMinimapFactory clientsideMinimapFactory() {
+    return defaultClientsideMinimapFactory;
+  }
+
+  @Override
+  public MinimapPacketSender packetSender() {
+    return defaultMinimapPacketSender;
+  }
+
+  @Override
+  public WorldMinimapRenderer worldRenderer() {
+    return defaultWorldRenderer;
+  }
+
+  @Override
+  public MinimapIconProvider iconProvider() {
+    return minimapIconProvider;
+  }
+
+  @Override
+  public MinimapWorldRendererProvider worldRendererProvider() {
+    return worldRendererProvider;
   }
 
   public PassengerRewriter getPassengerRewriter(Player player) {
     return passengerRewriters.get(player);
   }
 
+  @Override
   public Minimap getPlayerMinimap(Player player) {
     return minimapListener.getPlayerMinimaps().get(player);
   }

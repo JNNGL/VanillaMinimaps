@@ -18,6 +18,7 @@
 package com.jnngl.vanillaminimaps.map.renderer.encoder;
 
 import com.jnngl.vanillaminimaps.map.Minimap;
+import com.jnngl.vanillaminimaps.map.MinimapScreenPosition;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
@@ -51,7 +52,7 @@ public class SecondaryMapEncoder {
       trackedZ += 64;
     }
 
-    PrimaryMapEncoder.encodePrimaryLayer(positionX, positionZ, data);
+    PrimaryMapEncoder.encodePrimaryLayer(minimap.screenPosition() == MinimapScreenPosition.RIGHT, positionX, positionZ, data);
     Location position = new Location(location.getWorld(), layer.getPositionX(), location.getY(), layer.getPositionZ());
     boolean tracked = !layer.isTrackLocation() || layer.isKeepOnEdge() || location.distanceSquared(position) < 64 * 64;
     if (tracked && trackedX >= 0 && trackedX < 128 && trackedZ >= 0 && trackedZ < 128) {

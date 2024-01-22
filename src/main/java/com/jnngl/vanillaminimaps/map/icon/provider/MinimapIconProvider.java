@@ -15,24 +15,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.map;
+package com.jnngl.vanillaminimaps.map.icon.provider;
 
-import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class SecondaryMinimapLayer {
+import java.util.Set;
+import java.util.stream.Collectors;
 
-  private final MinimapLayer baseLayer;
-  private SecondaryMinimapLayerRenderer renderer;
-  private boolean trackLocation;
-  private boolean keepOnEdge;
-  private int positionX;
-  private int positionZ;
-  private float depth;
+public interface MinimapIconProvider {
 
+  MinimapIcon getIcon(String key);
+
+  void registerIcon(String key, MinimapIcon icon);
+
+  Set<String> allKeys();
+
+  Set<String> specialIconKeys();
+
+  default Set<String> genericIconKeys() {
+    Set<String> special = specialIconKeys();
+    return allKeys().stream()
+        .filter(key -> !specialIconKeys().contains(key))
+        .collect(Collectors.toSet());
+  }
 }

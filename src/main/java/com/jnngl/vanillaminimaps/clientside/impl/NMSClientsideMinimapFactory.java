@@ -21,6 +21,7 @@ import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.EntityHandle;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
+import com.jnngl.vanillaminimaps.map.MinimapScreenPosition;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
 import net.minecraft.core.Direction;
@@ -62,8 +63,9 @@ public class NMSClientsideMinimapFactory implements ClientsideMinimapFactory {
   }
 
   @Override
-  public Minimap createMinimap(Player holder, MinimapLayer primaryLayer, Map<String, SecondaryMinimapLayer> secondaryLayers) {
-    Minimap minimap = new Minimap(holder, primaryLayer, new LinkedHashMap<>());
+  public Minimap createMinimap(Player holder, MinimapScreenPosition position, MinimapLayer primaryLayer,
+                               Map<String, SecondaryMinimapLayer> secondaryLayers) {
+    Minimap minimap = new Minimap(holder, position, primaryLayer, new LinkedHashMap<>());
     if (secondaryLayers != null) {
       minimap.secondaryLayers().putAll(secondaryLayers);
     }

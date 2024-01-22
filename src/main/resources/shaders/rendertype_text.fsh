@@ -1,3 +1,6 @@
+// Vanilla Minimaps
+// https://github.com/JNNGL/VanillaMinimaps
+
 #version 150
 
 #moj_import <fog.glsl>
@@ -29,8 +32,10 @@ void main() {
     if (minimap == 1.0 || minimap == 2.0) {
         vec2 uvn11 = texCoord2 * 2.0 - 1.0;
         float dist = dot(uvn11, uvn11);
-        if (dist < 0.89 || keepEdges == 1.0) {
+        if (dist < 0.87 || keepEdges == 1.0) {
             vec4 color = texture(Sampler0, texCoord1);
+            // Godlander's map colors
+            // https://github.com/Godlander/vpp/blob/main/assets/minecraft/shaders/core/render/text.fsh
             ivec3 i = ivec3(color.rgb * 255.5);
             switch ((i.r << 16) + (i.g << 8) + i.b) {
                 MAP(vec3(127.,178.,56.) ,   vec3(94.,123.,57.))
@@ -53,7 +58,13 @@ void main() {
             }
             fragColor = color * vertexColor * ColorModulator;
         } else if (dist < 0.93 && minimap == 1.0) {
-            fragColor = vec4(0.1);
+            fragColor = vec4(17. / 255.);
+            if (dist > 0.89 && dist < 0.92) {
+                fragColor = vec4(40. / 255.);
+                if (dist > 0.9) {
+                    fragColor = vec4(70. / 255.);
+                }
+            }
             fragColor.a = 1.0;
         } else {
             discard;

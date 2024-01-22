@@ -15,24 +15,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.map;
+package com.jnngl.vanillaminimaps.command;
 
-import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
+import com.jnngl.vanillaminimaps.VanillaMinimaps;
+import com.mojang.brigadier.CommandDispatcher;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
+import net.minecraft.commands.CommandSourceStack;
 
 @Getter
-@Setter
 @AllArgsConstructor
-public class SecondaryMinimapLayer {
+public abstract class BrigadierCommand {
 
-  private final MinimapLayer baseLayer;
-  private SecondaryMinimapLayerRenderer renderer;
-  private boolean trackLocation;
-  private boolean keepOnEdge;
-  private int positionX;
-  private int positionZ;
-  private float depth;
+  private final VanillaMinimaps plugin;
 
+  public abstract void register(CommandDispatcher<CommandSourceStack> dispatcher);
 }

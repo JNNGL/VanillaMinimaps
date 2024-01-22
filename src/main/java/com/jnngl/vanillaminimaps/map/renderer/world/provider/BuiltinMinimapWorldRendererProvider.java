@@ -15,24 +15,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.map;
+package com.jnngl.vanillaminimaps.map.renderer.world.provider;
 
-import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import com.jnngl.vanillaminimaps.map.renderer.world.FlatWorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.VanillaWorldMinimapRenderer;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class SecondaryMinimapLayer {
+public class BuiltinMinimapWorldRendererProvider extends MinimapWorldRendererProviderImpl {
 
-  private final MinimapLayer baseLayer;
-  private SecondaryMinimapLayerRenderer renderer;
-  private boolean trackLocation;
-  private boolean keepOnEdge;
-  private int positionX;
-  private int positionZ;
-  private float depth;
-
+  public BuiltinMinimapWorldRendererProvider() {
+    register("vanilla", VanillaWorldMinimapRenderer::new);
+    register("flat", FlatWorldMinimapRenderer::new);
+  }
 }

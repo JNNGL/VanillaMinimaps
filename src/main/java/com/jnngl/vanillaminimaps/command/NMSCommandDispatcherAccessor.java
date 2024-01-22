@@ -15,24 +15,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.map;
+package com.jnngl.vanillaminimaps.command;
 
-import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandSourceStack;
+import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class SecondaryMinimapLayer {
+public class NMSCommandDispatcherAccessor {
 
-  private final MinimapLayer baseLayer;
-  private SecondaryMinimapLayerRenderer renderer;
-  private boolean trackLocation;
-  private boolean keepOnEdge;
-  private int positionX;
-  private int positionZ;
-  private float depth;
-
+  public static CommandDispatcher<CommandSourceStack> vanillaDispatcher() {
+    return ((CraftServer) Bukkit.getServer()).getServer().vanillaCommandDispatcher.getDispatcher();
+  }
 }

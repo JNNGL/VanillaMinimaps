@@ -17,22 +17,24 @@
 
 package com.jnngl.vanillaminimaps.map;
 
-import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
+import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
+import com.jnngl.vanillaminimaps.map.icon.provider.MinimapIconProvider;
+import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
+import com.jnngl.vanillaminimaps.map.renderer.world.provider.MinimapWorldRendererProvider;
+import org.bukkit.entity.Player;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class SecondaryMinimapLayer {
+public interface MinimapProvider {
 
-  private final MinimapLayer baseLayer;
-  private SecondaryMinimapLayerRenderer renderer;
-  private boolean trackLocation;
-  private boolean keepOnEdge;
-  private int positionX;
-  private int positionZ;
-  private float depth;
+  ClientsideMinimapFactory clientsideMinimapFactory();
 
+  MinimapPacketSender packetSender();
+
+  WorldMinimapRenderer worldRenderer();
+
+  MinimapIconProvider iconProvider();
+
+  MinimapWorldRendererProvider worldRendererProvider();
+
+  Minimap getPlayerMinimap(Player player);
 }

@@ -22,10 +22,15 @@ repositories {
 
 dependencies {
     paperweightDevelopmentBundle 'io.papermc.paper:dev-bundle:1.20.4-R0.1-SNAPSHOT'
+    implementation 'net.elytrium:serializer:1.1.1'
     implementation 'com.jnngl:mapcolor:1.0.1'
     compileOnly 'io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     compileOnly 'org.projectlombok:lombok:1.18.30'
+}
+
+shadowJar {
+    relocate 'net.elytrium.serializer', 'com.jnngl.vanillaminimaps.serializer'
 }
 
 def targetJavaVersion = 17

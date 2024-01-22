@@ -1,3 +1,6 @@
+// Vanilla Minimaps
+// https://github.com/JNNGL/VanillaMinimaps
+
 #version 150
 
 #moj_import <fog.glsl>
@@ -87,6 +90,10 @@ void main() {
 
         float texel = 1. / 128.;
         uv += vec2(texel) * vec2(-vx, -vz);
+
+        if (sign(length(texture(Sampler0, vec2(texel * 17, 0.)).xyz)) > 0) {
+            gl_Position.x += 2.0 - 0.74 * vratio;
+        }
 
         bool isMarker = sign(length(texture(Sampler0, vec2(0., texel)).xyz)) > 0;
         if (isMarker) {
