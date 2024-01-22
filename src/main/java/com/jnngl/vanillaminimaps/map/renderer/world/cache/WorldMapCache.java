@@ -138,8 +138,8 @@ public class WorldMapCache<R extends CacheableWorldMinimapRenderer> {
   public void notifyDirtyArea(World world, Vector4i area) {
     int startX = (area.x() >> 7) << 7;
     int startZ = (area.y() >> 7) << 7;
-    int endX = (area.z() >> 7) << 7;
-    int endZ = (area.w() >> 7) << 7;
+    int endX = ((area.x() + area.z()) >> 7) << 7;
+    int endZ = ((area.y() + area.w()) >> 7) << 7;
     Set<UUID> allViewers = new HashSet<>();
     for (int x = startX; x <= endX; x += 128) {
       for (int z = startZ; z <= endZ; z += 128) {

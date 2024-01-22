@@ -23,10 +23,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.plugin.Plugin;
 import org.joml.Vector4i;
 
@@ -41,7 +44,7 @@ public class MinimapBlockListener implements Listener {
           BlockPistonExtendEvent.class, BlockPistonRetractEvent.class, BlockPlaceEvent.class,
           BlockRedstoneEvent.class, FluidLevelChangeEvent.class, LeavesDecayEvent.class, MoistureChangeEvent.class,
           SculkBloomEvent.class, SpongeAbsorbEvent.class, TNTPrimeEvent.class, EntityBlockFormEvent.class,
-          BlockFormEvent.class, BlockSpreadEvent.class);
+          BlockFormEvent.class, BlockSpreadEvent.class, EntityExplodeEvent.class, EntityChangeBlockEvent.class);
 
   @Getter
   private final Set<WorldMapCache<?>> registeredCache = new HashSet<>();
@@ -50,7 +53,7 @@ public class MinimapBlockListener implements Listener {
   public void registerListener(Plugin plugin) {
     EVENTS.forEach(eventClass ->
         Bukkit.getPluginManager().registerEvent(eventClass, this, EventPriority.HIGH,
-            (listener, event) -> onBlockChange((BlockEvent) event), plugin));
+            (listener, event) -> onBlockChange(event), plugin));
   }
 
   public void registerCache(WorldMapCache<?> cache) {
@@ -81,6 +84,10 @@ public class MinimapBlockListener implements Listener {
   }
 
   protected void update(Block block, WorldMapCache<?> cache, boolean updateNeighbourBlocks) {
+    if (block == null) {
+      return;
+    }
+
     Vector4i area = new Vector4i(block.getX(), block.getZ(), 1, 1);
     updateBlock(block, cache);
     if (updateNeighbourBlocks) {
@@ -93,8 +100,40 @@ public class MinimapBlockListener implements Listener {
     cache.notifyDirtyArea(block.getWorld(), area);
   }
 
-  private void onBlockChange(BlockEvent event) {
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,
-        () -> update(event.getBlock()));
+  private void onBlockChange(Event event) {
+    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+      if (event instanceof BlockExplodeEvent explode) {
+        explode.blockList().forEach(this::update);
+      } else if (event instanceof EntityExplodeEvent explode) {
+        explode.blockList().forEach(this::update);
+      } else if (event instanceof EntityChangeBlockEvent changeBlock) {
+        update(changeBlock.getBlock());
+      } else if (event instanceof BlockBurnEvent burn) {
+        update(burn.getIgnitingBlock());
+      } else if (event instanceof BlockFertilizeEvent fertilize) {
+        fertilize.getBlocks().stream()
+            .filter(BlockState::isPlaced)
+            .map(BlockState::getBlock)
+            .forEach(this::update);
+      } else if (event instanceof BlockFromToEvent fromTo) {
+        update(fromTo.getToBlock());
+      } else if (event instanceof BlockIgniteEvent ignite) {
+        update(ignite.getIgnitingBlock());
+      } else if (event instanceof BlockPistonExtendEvent pistonExtend) {
+        pistonExtend.getBlocks().forEach(this::update);
+      } else if (event instanceof BlockPistonRetractEvent pistonRetract) {
+        pistonRetract.getBlocks().forEach(this::update);
+      } else if (event instanceof SpongeAbsorbEvent spongeAbsorb) {
+        spongeAbsorb.getBlocks().stream()
+            .filter(BlockState::isPlaced)
+            .map(BlockState::getBlock)
+            .forEach(this::update);
+      } else if (event instanceof TNTPrimeEvent tntPrime) {
+        update(tntPrime.getPrimingBlock());
+      }
+      if (event instanceof BlockEvent blockEvent) {
+        update(blockEvent.getBlock());
+      }
+    });
   }
 }
