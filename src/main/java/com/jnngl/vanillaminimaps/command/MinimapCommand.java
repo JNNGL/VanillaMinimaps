@@ -293,11 +293,10 @@ public class MinimapCommand extends BrigadierCommand {
     }
 
     SteerableLockedView view = getPlugin().getSteerableViewFactory().lockedView(player);
-    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.of(getPlugin(), minimap);
+    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.create(getPlugin(), minimap);
     fullscreenMinimap.spawn(getPlugin());
 
     view.onSneak(v -> {
-      view.onSneak(null);
       fullscreenMinimap.despawn(getPlugin(), null);
       view.destroy();
     });

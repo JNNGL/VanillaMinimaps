@@ -68,6 +68,16 @@ public class Config extends YamlSerializable {
     }
   }
 
+  public Fullscreen fullscreen = new Fullscreen();
+
+  public static class Fullscreen {
+
+    @Comment(@CommentValue("1 segment = 128*128 pixels = 8*8 chunks"))
+    public int segmentsX = 5;
+
+    public int segmentsZ = 3;
+  }
+
   @NewLine
   @Comment(@CommentValue("Don't touch this."))
   public int databaseVersion = 0;

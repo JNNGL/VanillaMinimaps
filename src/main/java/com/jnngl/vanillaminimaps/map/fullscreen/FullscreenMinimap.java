@@ -1,6 +1,7 @@
 package com.jnngl.vanillaminimaps.map.fullscreen;
 
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
+import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.MinimapProvider;
@@ -17,6 +18,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Getter
 @ToString
@@ -41,6 +43,47 @@ public class FullscreenMinimap {
     return 1 - Math.pow(1 - x, 3);
   }
 
+  public CompletableFuture<Void> fadeIn(MinimapProvider provider, Function<Double, Double> easing, int duration) {
+    CompletableFuture<Void> transitionFuture = new CompletableFuture<>();
+    BukkitTask task = Bukkit.getScheduler().runTaskTimer(VanillaMinimaps.getPlugin(VanillaMinimaps.class), new Runnable() {
+
+      private int tick = 0;
+
+      @Override
+      public void run() {
+        ++tick;
+        if (tick > duration) {
+          return;
+        }
+
+        double transition = (double) tick / duration;
+        transition = easing.apply(transition);
+
+        FullscreenMinimap.this.transitionState = transition;
+
+        byte[] meta = new byte[128];
+        FullscreenMapEncoder.encodeBackground(FullscreenMinimap.this, meta);
+        provider.packetSender().updateLayer(holder, backgroundLayer, 0, 0, 128, 1, meta);
+
+        primaryLayer.forEach(layer -> {
+          byte[] layerMeta = new byte[128];
+          FullscreenMapEncoder.encodePrimaryLayer(FullscreenMinimap.this, layer, layerMeta);
+          provider.packetSender().updateLayer(holder, layer.base(), 0, 0, 128, 1, layerMeta);
+        });
+
+        if (tick == duration) {
+          transitionFuture.complete(null);
+        }
+      }
+    }, 0L, 1L);
+
+    return transitionFuture.whenComplete((v, t) -> task.cancel());
+  }
+
+  public CompletableFuture<Void> fadeOut(MinimapProvider provider, Function<Double, Double> easing, int duration) {
+    return fadeIn(provider, x -> 1.0 - easing.apply(x), duration);
+  }
+
   public void spawn(MinimapProvider provider) {
     PriorityQueue<Map.Entry<FullscreenMinimapLayer, Integer>> chunkQueue = new PriorityQueue<>(Map.Entry.comparingByValue());
 
@@ -60,40 +103,7 @@ public class FullscreenMinimap {
       chunkQueue.offer(new AbstractMap.SimpleImmutableEntry<>(layer, (int) segmentPosition.distanceSquared(holderPosition)));
     });
 
-    CompletableFuture<Void> transitionFuture = new CompletableFuture<>();
-    BukkitTask task = Bukkit.getScheduler().runTaskTimer(VanillaMinimaps.getPlugin(VanillaMinimaps.class), new Runnable() {
-
-      private int tick = 0;
-
-      @Override
-      public void run() {
-        ++tick;
-        if (tick > 20) {
-          return;
-        }
-
-        double transition = (double) tick / 20;
-        transition = easeOutCubic(transition);
-
-        FullscreenMinimap.this.transitionState = transition;
-
-        byte[] meta = new byte[128];
-        FullscreenMapEncoder.encodeBackground(FullscreenMinimap.this, meta);
-        provider.packetSender().updateLayer(holder, backgroundLayer, 0, 0, 128, 1, meta);
-
-        primaryLayer.forEach(layer -> {
-          byte[] layerMeta = new byte[128];
-          FullscreenMapEncoder.encodePrimaryLayer(FullscreenMinimap.this, layer, layerMeta);
-          provider.packetSender().updateLayer(holder, layer.base(), 0, 0, 128, 1, layerMeta);
-        });
-
-        if (tick == 20) {
-          transitionFuture.complete(null);
-        }
-      }
-    }, 0L, 1L);
-
-    transitionFuture.whenComplete((v, t) -> task.cancel());
+    fadeIn(provider, FullscreenMinimap::easeOutCubic, 20);
 
     ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -118,41 +128,7 @@ public class FullscreenMinimap {
   }
 
   public void despawn(MinimapProvider provider, Consumer<Void> callback) {
-    CompletableFuture<Void> transitionFuture = new CompletableFuture<>();
-    BukkitTask task = Bukkit.getScheduler().runTaskTimer(VanillaMinimaps.getPlugin(VanillaMinimaps.class), new Runnable() {
-
-      private int tick = 0;
-
-      @Override
-      public void run() {
-        ++tick;
-        if (tick > 10) {
-          return;
-        }
-
-        double transition = (double) tick / 10;
-        transition = 1.0 - easeOutCubic(transition);
-
-        FullscreenMinimap.this.transitionState = transition;
-
-        byte[] meta = new byte[128];
-        FullscreenMapEncoder.encodeBackground(FullscreenMinimap.this, meta);
-        provider.packetSender().updateLayer(holder, backgroundLayer, 0, 0, 128, 1, meta);
-
-        primaryLayer.forEach(layer -> {
-          byte[] layerMeta = new byte[128];
-          FullscreenMapEncoder.encodePrimaryLayer(FullscreenMinimap.this, layer, layerMeta);
-          provider.packetSender().updateLayer(holder, layer.base(), 0, 0, 128, 1, layerMeta);
-        });
-
-        if (tick == 10) {
-          transitionFuture.complete(null);
-        }
-      }
-    }, 0L, 1L);
-
-    transitionFuture.whenComplete((v, t) -> {
-      task.cancel();
+    fadeOut(provider, FullscreenMinimap::easeOutCubic, 10).whenComplete((v, t) -> {
       provider.packetSender().despawnLayer(holder, backgroundLayer);
       primaryLayer.forEach(layer -> provider.packetSender().despawnLayer(holder, layer.base()));
       if (callback != null) {
@@ -161,22 +137,29 @@ public class FullscreenMinimap {
     });
   }
 
-  public static FullscreenMinimap of(MinimapProvider provider, Minimap minimap) {
+  public static FullscreenMinimap create(MinimapProvider provider, Minimap minimap, int segmentsX, int segmentsZ) {
+
     List<FullscreenMinimapLayer> layers = new ArrayList<>();
 
     World world = minimap.holder().getWorld();
     MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
 
+    segmentsX /= 2;
+    segmentsZ /= 2;
     int startX = (int) minimap.holder().getX() >> 7;
     int startZ = (int) minimap.holder().getZ() >> 7;
-    for (int x = startX - 2; x <= startX + 2; x++) {
-      for (int z = startZ - 1; z <= startZ + 1; z++) {
+    for (int x = startX - segmentsX; x <= startX + segmentsX; x++) {
+      for (int z = startZ - segmentsZ; z <= startZ + segmentsZ; z++) {
         MinimapLayer baseLayer = provider.clientsideMinimapFactory().createMinimapLayer(world, primaryRenderer);
-        layers.add(new FullscreenMinimapLayer(baseLayer, x, z, x - startX + 2, z - startZ + 1));
+        layers.add(new FullscreenMinimapLayer(baseLayer, x, z, x - startX + segmentsX, z - startZ + segmentsZ));
       }
     }
 
     MinimapLayer backgroundLayer = provider.clientsideMinimapFactory().createMinimapLayer(world, null);
-    return new FullscreenMinimap(minimap, minimap.holder(), layers, backgroundLayer, 5, 3);
+    return new FullscreenMinimap(minimap, minimap.holder(), layers, backgroundLayer, segmentsX * 2 + 1, segmentsZ * 2 + 1);
+  }
+
+  public static FullscreenMinimap create(MinimapProvider provider, Minimap minimap) {
+    return create(provider, minimap, Config.instance().fullscreen.segmentsX, Config.instance().fullscreen.segmentsZ);
   }
 }
