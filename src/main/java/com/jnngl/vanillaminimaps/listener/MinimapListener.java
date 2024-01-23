@@ -43,14 +43,14 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MinimapListener implements Listener {
 
   @Getter
   private final Map<Player, Minimap> playerMinimaps = new HashMap<>();
   private final Map<Player, IntIntImmutablePair> playerSections = new HashMap<>();
+  private final Set<UUID> requestedUpdates = new HashSet<>();
   private final VanillaMinimaps plugin;
 
   public MinimapListener(VanillaMinimaps plugin) {
@@ -90,15 +90,30 @@ public class MinimapListener implements Listener {
     }
 
     if (worldRenderer instanceof CacheableWorldMinimapRenderer cacheable) {
-      cacheable.getWorldMapCache().setCallback(player.getUniqueId(), area -> minimap.update(plugin, player.getX(), player.getZ(), false));
+      cacheable.getWorldMapCache().setCallback(player.getUniqueId(), area -> {
+        if (area.x() >= player.getX() - 64 && area.y() >= player.getZ() - 64 &&
+            area.x() + area.z() <= player.getX() + 64 && area.y() + area.w() <= player.getZ() + 64 &&
+            requestedUpdates.add(player.getUniqueId())) {
+          Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+            if (requestedUpdates.remove(player.getUniqueId())) {
+              minimap.update(plugin, player.getX(), player.getZ(), false);
+            }
+          });
+        }
+      });
     }
 
     minimap.update(plugin, player.getX(), player.getZ(), true);
   }
 
   public void disableMinimap(Player player) {
+    playerSections.remove(player);
     Minimap minimap = playerMinimaps.remove(player);
     if (minimap != null) {
+      MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
+      if (primaryRenderer instanceof CacheableWorldMinimapRenderer cacheableRenderer) {
+        cacheableRenderer.getWorldMapCache().releaseViewer(player.getUniqueId());
+      }
       plugin.packetSender().despawnMinimap(minimap);
     }
   }
@@ -140,6 +155,7 @@ public class MinimapListener implements Listener {
     int currentZ = event.getTo().getBlockZ() >> 7;
     boolean changedSection = previous == null || currentZ != previous.rightInt() || currentX != previous.leftInt();
     minimap.update(plugin, event.getTo().getX(), event.getTo().getZ(), changedSection);
+    requestedUpdates.remove(event.getPlayer().getUniqueId());
     if (changedSection) {
       playerSections.put(event.getPlayer(), IntIntImmutablePair.of(currentX, currentZ));
     }
@@ -168,12 +184,7 @@ public class MinimapListener implements Listener {
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
     Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-      playerSections.remove(event.getPlayer());
-      Minimap minimap = playerMinimaps.remove(event.getPlayer());
-      MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
-      if (primaryRenderer instanceof CacheableWorldMinimapRenderer cacheableRenderer) {
-        cacheableRenderer.getWorldMapCache().releaseViewer(event.getPlayer().getUniqueId());
-      }
+      disableMinimap(event.getPlayer());
     });
   }
 }

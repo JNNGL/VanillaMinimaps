@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 @ToString
 @EqualsAndHashCode
 public final class Minimap {
+
   private final Player holder;
   private final MinimapLayer primaryLayer;
   private final LinkedHashMap<String, SecondaryMinimapLayer> secondaryLayers;
