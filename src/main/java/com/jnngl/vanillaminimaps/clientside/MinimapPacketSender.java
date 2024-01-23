@@ -25,6 +25,8 @@ public interface MinimapPacketSender {
 
   void updateLayer(Player viewer, MinimapLayer layer, int x, int y, int width, int height, byte[] data);
 
+  void spawnFixedLayer(Player viewer, MinimapLayer layer);
+
   void spawnLayer(Player viewer, MinimapLayer layer);
 
   void spawnMinimap(Minimap minimap);

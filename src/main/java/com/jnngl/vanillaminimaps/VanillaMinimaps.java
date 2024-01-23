@@ -19,8 +19,10 @@ package com.jnngl.vanillaminimaps;
 
 import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
+import com.jnngl.vanillaminimaps.clientside.SteerableViewFactory;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSMinimapPacketSender;
+import com.jnngl.vanillaminimaps.clientside.impl.NMSSteerableViewFactory;
 import com.jnngl.vanillaminimaps.command.MinimapCommand;
 import com.jnngl.vanillaminimaps.command.NMSCommandDispatcherAccessor;
 import com.jnngl.vanillaminimaps.config.Config;
@@ -81,6 +83,10 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @MonotonicNonNull
   private MinimapListener minimapListener;
 
+  @Getter
+  @MonotonicNonNull
+  private SteerableViewFactory steerableViewFactory;
+
   @Override
   @SneakyThrows
   public void onEnable() {
@@ -96,6 +102,7 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
     worldRendererProvider = new BuiltinMinimapWorldRendererProvider();
     minimapBlockListener = new MinimapBlockListener(this);
     minimapListener = new MinimapListener(this);
+    steerableViewFactory = new NMSSteerableViewFactory();
 
     defaultWorldRenderer = worldRendererProvider.create(Config.instance().defaultMinimapRenderer);
     if (defaultWorldRenderer == null) {

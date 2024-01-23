@@ -19,6 +19,7 @@ package com.jnngl.vanillaminimaps.clientside.impl;
 
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
 import com.jnngl.vanillaminimaps.clientside.AbstractMinimapPacketSender;
+import com.jnngl.vanillaminimaps.clientside.EntityHandle;
 import com.jnngl.vanillaminimaps.injection.PassengerRewriter;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
@@ -56,6 +57,19 @@ public class NMSMinimapPacketSender extends AbstractMinimapPacketSender {
     if (metadata != null && !metadata.isEmpty()) {
       connection.send(new ClientboundSetEntityDataPacket(itemFrame.getId(), metadata));
     }
+  }
+
+  public void spawnFixedLayer(Player viewer, MinimapLayer layer) {
+    EntityHandle<?> handle = viewer.getPitch() > 0 ? layer.upperFrame() : layer.lowerFrame();
+    ItemFrame frame = (ItemFrame) handle.entity();
+
+    ServerPlayerConnection connection = ((CraftPlayer) viewer).getHandle().connection;
+    spawnItemFrame(connection, frame);
+
+    PassengerRewriter rewriter = plugin.getPassengerRewriter(viewer);
+    rewriter.addPassenger(viewer.getEntityId(), frame.getId());
+
+    connection.send(new ClientboundSetPassengersPacket(((CraftPlayer) viewer).getHandle()));
   }
 
   @Override

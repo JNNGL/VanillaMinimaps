@@ -27,6 +27,8 @@ out vec2 texCoord1;
 out vec2 texCoord2;
 out float minimap;
 out float keepEdges;
+out float transition;
+out float fullscreenMinimap;
 
 mat2 mat2_rotate_z(float radians) {
     return mat2(
@@ -35,7 +37,7 @@ mat2 mat2_rotate_z(float radians) {
     );
 }
 
-float decodeFixedPoint(int offsetX, int offsetY) {
+int decodeUnsigned(int offsetX, int offsetY) {
     float texel = 1. / 128.;
     float yOffTexel = float(offsetY) * texel;
 
@@ -48,7 +50,11 @@ float decodeFixedPoint(int offsetX, int offsetY) {
         power *= 2;
     }
 
-    return float(value) / 255.0;
+    return value;
+}
+
+float decodeFixedPoint(int offsetX, int offsetY) {
+    return float(decodeUnsigned(offsetX, offsetY)) / 255.0;
 }
 
 void main() {
@@ -57,6 +63,8 @@ void main() {
     gl_Position = ProjMat * ModelViewMat * vertex;
     vertexDistance = length((ModelViewMat * vertex).xyz);
 
+    fullscreenMinimap = 0.0;
+    transition = 0.0;
     minimap = 0.0;
     keepEdges = 0.0;
     vec2 uv = UV0;
@@ -114,6 +122,41 @@ void main() {
             bool keep = sign(length(texture(Sampler0, vec2(texel * 9., texel * 2)).xyz)) > 0;
             keepEdges = keep ? 1.0 : 0.0;
             minimap = 2.0;
+        }
+    } else {
+        int fullscreenMagic = decodeUnsigned(0, 0);
+        if (fullscreenMagic == 178) {
+            int segmentX = decodeUnsigned(8, 0);
+            int segmentY = decodeUnsigned(16, 0);
+            int xSegments = decodeUnsigned(24, 0);
+            int ySegments = decodeUnsigned(32, 0);
+            transition = decodeFixedPoint(40, 0);
+            int vertexId = gl_VertexID % 4;
+            float ratio = ScreenSize.x / ScreenSize.y;
+            float vratio = ScreenSize.y / ScreenSize.x;
+            if (vratio < ratio) ratio = 1;
+            else vratio = 1;
+            float left = -float(xSegments) * 0.5 * vratio * 0.64;
+            float top = float(ySegments) * 0.5 * ratio * 0.64 - (1.0 - transition);
+            switch (vertexId) {
+                case 0: { gl_Position = vec4(left + 0.64 * segmentX * vratio,       top - 0.64 * segmentY * ratio,       -0.5, 1); uv2 = vec2(0, 1); break; }
+                case 1: { gl_Position = vec4(left + 0.64 * segmentX * vratio,       top - 0.64 * (segmentY + 1) * ratio, -0.5, 1); uv2 = vec2(0, 0); break; }
+                case 2: { gl_Position = vec4(left + 0.64 * (segmentX + 1) * vratio, top - 0.64 * (segmentY + 1) * ratio, -0.5, 1); uv2 = vec2(1, 0); break; }
+                case 3: { gl_Position = vec4(left + 0.64 * (segmentX + 1) * vratio, top - 0.64 * segmentY * ratio,       -0.5, 1); uv2 = vec2(1, 1); break; }
+            }
+            vcolor = Color;
+            fullscreenMinimap = 1.0;
+        } else if (fullscreenMagic == 109) {
+            transition = decodeFixedPoint(8, 0);
+            int vertexId = gl_VertexID % 4;
+            switch (vertexId) {
+                case 0: { gl_Position = vec4(-1, 1, -0.4, 1); uv2 = vec2(0, 1); break; }
+                case 1: { gl_Position = vec4(-1, -1, -0.4, 1); uv2 = vec2(0, 0); break; }
+                case 2: { gl_Position = vec4(1, -1, -0.4, 1); uv2 = vec2(1, 0); break; }
+                case 3: { gl_Position = vec4(1, 1, -0.4, 1); uv2 = vec2(1, 1); break; }
+            }
+            vcolor = Color;
+            fullscreenMinimap = 2.0;
         }
     }
 

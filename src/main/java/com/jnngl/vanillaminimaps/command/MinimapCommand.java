@@ -18,11 +18,13 @@
 package com.jnngl.vanillaminimaps.command;
 
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
+import com.jnngl.vanillaminimaps.clientside.SteerableLockedView;
 import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.MinimapScreenPosition;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
 import com.mojang.brigadier.CommandDispatcher;
@@ -83,6 +85,8 @@ public class MinimapCommand extends BrigadierCommand {
                     .then(Commands.argument("name", StringArgumentType.string())
                         .suggests(this::suggestMarkers)
                         .executes(this::removeMarker))))
+            .then(Commands.literal("fullscreen")
+                .executes(this::fullscreen))
     );
   }
 
@@ -275,6 +279,28 @@ public class MinimapCommand extends BrigadierCommand {
 
     getPlugin().packetSender().spawnLayer(player, iconBaseLayer);
     minimap.update(getPlugin());
+
+    return 1;
+  }
+
+  private int fullscreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
+    Player player = serverPlayer.getBukkitEntity();
+
+    Minimap minimap = getPlugin().getPlayerMinimap(player);
+    if (minimap == null) {
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+    }
+
+    SteerableLockedView view = getPlugin().getSteerableViewFactory().lockedView(player);
+    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.of(getPlugin(), minimap);
+    fullscreenMinimap.spawn(getPlugin());
+
+    view.onSneak(v -> {
+      view.onSneak(null);
+      fullscreenMinimap.despawn(getPlugin(), null);
+      view.destroy();
+    });
 
     return 1;
   }
