@@ -97,8 +97,10 @@ public class NMSMinimapPacketSender extends AbstractMinimapPacketSender {
     connection.send(new ClientboundRemoveEntitiesPacket(lowerFrame.getId(), upperFrame.getId()));
 
     PassengerRewriter rewriter = plugin.getPassengerRewriter(viewer);
-    rewriter.removePassenger(viewer.getEntityId(), lowerFrame.getId());
-    rewriter.removePassenger(viewer.getEntityId(), upperFrame.getId());
+    if (rewriter != null) {
+      rewriter.removePassenger(viewer.getEntityId(), lowerFrame.getId());
+      rewriter.removePassenger(viewer.getEntityId(), upperFrame.getId());
+    }
 
     connection.send(new ClientboundSetPassengersPacket(((CraftPlayer) viewer).getHandle()));
   }
