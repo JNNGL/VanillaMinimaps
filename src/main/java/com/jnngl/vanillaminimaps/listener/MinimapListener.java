@@ -81,9 +81,11 @@ public class MinimapListener implements Listener {
     playerMinimaps.put(player, minimap);
 
     MinimapIcon playerIcon = plugin.iconProvider().getIcon("player");
+    MinimapIcon offscreenPlayerIcon = plugin.iconProvider().getIcon("offscreen_player");
     if (playerIcon != null) {
       MinimapLayer playerIconBaseLayer = minimapFactory.createMinimapLayer(player.getWorld(), null);
-      SecondaryMinimapLayer playerIconLayer = new SecondaryMinimapLayer(playerIconBaseLayer, new MinimapIconRenderer(playerIcon), false, false, 64, 64, 0.1F);
+      MinimapIconRenderer playerIconRenderer = new MinimapIconRenderer(playerIcon, offscreenPlayerIcon);
+      SecondaryMinimapLayer playerIconLayer = new SecondaryMinimapLayer(playerIconBaseLayer, playerIconRenderer, false, false, 64, 64, 0.1F);
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);

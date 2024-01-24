@@ -1,3 +1,6 @@
+#define BORDER_COLOR1 vec4(vec3(40. / 255.), 1.)
+#define BORDER_COLOR2 vec4(vec3(70. / 255.), 1.)
+
 if (minimap == 1.0 || minimap == 2.0) {
     vec2 uvn11 = texCoord2 * 2.0 - 1.0;
     float dist = dot(uvn11, uvn11);
@@ -34,12 +37,34 @@ if (minimap == 1.0 || minimap == 2.0) {
 }
 
 if (fullscreenMinimap == 1.0) {
-    vec2 uv = texCoord2;
-    uv.x = 1.0 - uv.x;
+    ivec2 iuv = ivec2(texCoord0 * 128.);
+    iuv.y = 127 - iuv.y;
+    vec2 uv = texCoord0;
     uv.y *= 127. / 128.;
     uv.y += 1. / 128.;
     vec4 color = texture(Sampler0, uv);
     remapColor(color);
+    float fsx = fract(sx);
+    float fsy = fract(sy);
+    if (fsx == 0 && fsy == 0) {
+        if (sx == 1) iuv.y = 127 - iuv.y;
+        if (sy == 1) iuv.x = 127 - iuv.x;
+        if (iuv.x == 0 || iuv.y == 0) color = BORDER_COLOR1;
+        else if (iuv.x == 1 || iuv.y == 1) color = BORDER_COLOR2;
+        else if (iuv.x == 2 || iuv.y == 2) color = BORDER_COLOR1;
+    } else if (fsx == 0 || fsy == 0) {
+        int d = 0;
+        if (fsx == 0) {
+            if (sx == 1) iuv.y = 127 - iuv.y;
+            d = iuv.y;
+        } else {
+            if (sy == 1) iuv.x = 127 - iuv.x;
+            d = iuv.x;
+        }
+        if (d == 0) color = BORDER_COLOR1;
+        else if (d == 1) color = BORDER_COLOR2;
+        else if (d == 2) color = BORDER_COLOR1;
+    }
     fragColor = color * vertexColor * ColorModulator;
     fragColor.a *= transition;
     return;

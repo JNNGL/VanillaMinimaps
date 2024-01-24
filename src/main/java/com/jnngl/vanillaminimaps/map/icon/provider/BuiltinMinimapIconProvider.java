@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 @Getter
 public class BuiltinMinimapIconProvider implements MinimapIconProvider {
 
-  private static final Set<String> SPECIAL_KEYS = Set.of("player", "death");
+  private static final Set<String> SPECIAL_KEYS = Set.of("player", "death", "offscreen_player");
 
   private final Map<String, MinimapIcon> cache = new ConcurrentHashMap<>();
   private final Path lookupDirectory;

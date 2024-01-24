@@ -25,6 +25,7 @@ in float minimap;
 in float keepEdges;
 in float transition;
 in float fullscreenMinimap;
+in float sx, sy;
 
 out vec4 fragColor;
 

@@ -19,8 +19,12 @@ package com.jnngl.vanillaminimaps.map.renderer;
 
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenSecondaryMinimapLayer;
 
 public interface SecondaryMinimapLayerRenderer {
 
   void render(Minimap minimap, SecondaryMinimapLayer layer, byte[] data);
+
+  void renderFullscreen(FullscreenMinimap minimap, FullscreenSecondaryMinimapLayer layer, int chunkX, int chunkZ, byte[] data);
 }

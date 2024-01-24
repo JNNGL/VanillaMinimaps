@@ -5,6 +5,7 @@ import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.MinimapProvider;
+import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.encoder.FullscreenMapEncoder;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
@@ -34,7 +35,10 @@ public class FullscreenMinimap {
   private final Minimap baseMinimap;
   private final Player holder;
   private final List<FullscreenMinimapLayer> primaryLayer;
+  private final List<FullscreenSecondaryMinimapLayer> secondaryLayers;
   private final MinimapLayer backgroundLayer;
+  private final int startX;
+  private final int startZ;
   private final int width;
   private final int height;
   private double transitionState;
@@ -51,8 +55,7 @@ public class FullscreenMinimap {
 
       @Override
       public void run() {
-        ++tick;
-        if (tick > duration) {
+        if (++tick > duration) {
           return;
         }
 
@@ -111,13 +114,27 @@ public class FullscreenMinimap {
     while ((entry = chunkQueue.poll()) != null) {
       FullscreenMinimapLayer layer = entry.getKey();
       executor.execute(() -> {
-        byte[] buffer = new byte[128 * 128];
+        byte[] data = new byte[128 * 128];
         MinimapLayerRenderer renderer = layer.base().renderer();
         if (renderer instanceof WorldMinimapRenderer worldRenderer) {
-          worldRenderer.renderFully(world, layer.chunkX() << 7, layer.chunkZ() << 7, buffer);
+          worldRenderer.renderFully(world, layer.chunkX() << 7, layer.chunkZ() << 7, data);
         } else {
-          renderer.render(baseMinimap, layer.base(), buffer);
+          renderer.render(baseMinimap, layer.base(), data);
         }
+
+        byte[] buffer = new byte[128 * 128];
+        for (int z = 0; z < 128; z++) {
+          for (int x = 0; x < 128; x++) {
+            buffer[x * 128 + z] = data[(127 - z) * 128 + x];
+          }
+        }
+
+        secondaryLayers.forEach(secondary -> {
+          SecondaryMinimapLayer baseLayer = secondary.base();
+          if (baseLayer.getRenderer() != null) {
+            baseLayer.getRenderer().renderFullscreen(FullscreenMinimap.this, secondary, layer.chunkX(), layer.chunkZ(), buffer);
+          }
+        });
 
         FullscreenMapEncoder.encodePrimaryLayer(FullscreenMinimap.this, layer, buffer);
         provider.packetSender().updateLayer(holder, layer.base(), 0, 0, 128, 128, buffer);
@@ -138,25 +155,39 @@ public class FullscreenMinimap {
   }
 
   public static FullscreenMinimap create(MinimapProvider provider, Minimap minimap, int segmentsX, int segmentsZ) {
-
     List<FullscreenMinimapLayer> layers = new ArrayList<>();
+    List<FullscreenSecondaryMinimapLayer> secondary = new ArrayList<>();
 
     World world = minimap.holder().getWorld();
     MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
 
-    segmentsX /= 2;
-    segmentsZ /= 2;
+    int halfSegmentsX = segmentsX / 2;
+    int halfSegmentsZ = segmentsZ / 2;
     int startX = (int) minimap.holder().getX() >> 7;
     int startZ = (int) minimap.holder().getZ() >> 7;
-    for (int x = startX - segmentsX; x <= startX + segmentsX; x++) {
-      for (int z = startZ - segmentsZ; z <= startZ + segmentsZ; z++) {
+    for (int x = startX - halfSegmentsX; x <= startX + halfSegmentsX; x++) {
+      for (int z = startZ - halfSegmentsZ; z <= startZ + halfSegmentsZ; z++) {
         MinimapLayer baseLayer = provider.clientsideMinimapFactory().createMinimapLayer(world, primaryRenderer);
-        layers.add(new FullscreenMinimapLayer(baseLayer, x, z, x - startX + segmentsX, z - startZ + segmentsZ));
+        layers.add(new FullscreenMinimapLayer(baseLayer, x, z, x - startX + halfSegmentsX, z - startZ + halfSegmentsZ));
       }
     }
 
+    minimap.secondaryLayers().forEach((key, value) -> {
+      int worldX = value.getPositionX();
+      int worldZ = value.getPositionZ();
+      if (!value.isTrackLocation()) {
+        worldX += (int) (minimap.holder().getX() - 64);
+        worldZ += (int) (minimap.holder().getZ() - 64);
+      }
+      worldX >>= 7;
+      worldZ >>= 7;
+      secondary.add(new FullscreenSecondaryMinimapLayer(value, worldX, worldZ,
+          worldX - startX + halfSegmentsX, worldZ - startZ + halfSegmentsZ));
+    });
+
     MinimapLayer backgroundLayer = provider.clientsideMinimapFactory().createMinimapLayer(world, null);
-    return new FullscreenMinimap(minimap, minimap.holder(), layers, backgroundLayer, segmentsX * 2 + 1, segmentsZ * 2 + 1);
+    return new FullscreenMinimap(minimap, minimap.holder(), layers, secondary, backgroundLayer,
+        (startX - halfSegmentsX) << 7, (startZ - halfSegmentsZ) << 7, halfSegmentsX * 2 + 1, halfSegmentsZ * 2 + 1);
   }
 
   public static FullscreenMinimap create(MinimapProvider provider, Minimap minimap) {

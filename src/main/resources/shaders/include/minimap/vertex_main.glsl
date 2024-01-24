@@ -2,6 +2,8 @@ fullscreenMinimap = 0.0;
 transition = 0.0;
 minimap = 0.0;
 keepEdges = 0.0;
+sx = 0.0;
+sy = 0.0;
 vec2 uv = UV0;
 vec2 uv2 = vec2(0.0);
 
@@ -65,6 +67,8 @@ if (texture(Sampler0, uv).xyz == vec3(112. / 255., 108. / 255., 138. / 255.)) {
         int segmentY = decodeUnsigned(16, 0);
         int xSegments = decodeUnsigned(24, 0);
         int ySegments = decodeUnsigned(32, 0);
+        sx = float(segmentX) / float(xSegments - 1);
+        sy = float(segmentY) / float(ySegments - 1);
         transition = decodeFixedPoint(40, 0);
         int vertexId = gl_VertexID % 4;
         float ratio = ScreenSize.x / ScreenSize.y;

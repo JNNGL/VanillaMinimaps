@@ -19,11 +19,20 @@ package com.jnngl.vanillaminimaps.map.renderer;
 
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenSecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.Nullable;
 
-public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapLayerRenderer {
+import java.util.function.BiFunction;
+
+public record MinimapIconRenderer(MinimapIcon icon, @Nullable MinimapIcon fullscreenIcon) implements SecondaryMinimapLayerRenderer {
+
+  public MinimapIconRenderer(MinimapIcon icon) {
+    this(icon, icon);
+  }
 
   @Override
   public void render(Minimap minimap, SecondaryMinimapLayer layer, byte[] data) {
@@ -45,10 +54,39 @@ public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapL
       trackedZ += 64;
     }
 
+    renderIcon(icon, data, trackedX, trackedZ, (x, y) -> x * 128 + y);
+  }
+
+  @Override
+  public void renderFullscreen(FullscreenMinimap minimap, FullscreenSecondaryMinimapLayer layer, int chunkX, int chunkZ, byte[] data) {
+    if (fullscreenIcon == null) {
+      return;
+    }
+
+    int worldX = layer.base().getPositionX();
+    int worldZ = layer.base().getPositionZ();
+    if (!layer.base().isTrackLocation()) {
+      worldX += (int) (minimap.getHolder().getX() - 64);
+      worldZ += (int) (minimap.getHolder().getZ() - 64);
+    }
+
+    int mapX = worldX - (chunkX << 7);
+    int mapZ = worldZ - (chunkZ << 7);
+    if (mapX < -icon.width() ||
+        mapZ < -icon.height() ||
+        mapX > 128 + icon.width() ||
+        mapZ > 128 + icon.height()) {
+      return;
+    }
+
+    renderIcon(fullscreenIcon, data, mapX, mapZ, (x, y) -> (127 - x) * 128 + y);
+  }
+
+  private void renderIcon(MinimapIcon icon, byte[] data, int mapX, int mapZ, BiFunction<Integer, Integer, Integer> indexMapper) {
     int offsetX = -icon.width() / 2;
     int offsetY = -icon.height() / 2;
     for (int y = 0; y < icon.height(); y++) {
-      int globalY = y + offsetY + trackedZ;
+      int globalY = y + offsetY + mapZ;
       if (globalY < 0) {
         continue;
       }
@@ -58,7 +96,7 @@ public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapL
       }
 
       for (int x = 0; x < icon.width(); x++) {
-        int globalX = x + offsetX + trackedX;
+        int globalX = x + offsetX + mapX;
         if (globalX < 0) {
           continue;
         }
@@ -67,7 +105,12 @@ public record MinimapIconRenderer(MinimapIcon icon) implements SecondaryMinimapL
           break;
         }
 
-        data[globalX * 128 + globalY] = icon.data()[y * icon.width() + x];
+        byte color = icon.data()[y * icon.width() + x];
+        if (color == 0) {
+          continue;
+        }
+
+        data[indexMapper.apply(globalX, globalY)] = color;
       }
     }
   }
