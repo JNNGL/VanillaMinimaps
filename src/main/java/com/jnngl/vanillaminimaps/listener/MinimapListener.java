@@ -21,10 +21,12 @@ import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
 import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
+import com.jnngl.vanillaminimaps.clientside.SteerableLockedView;
 import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
@@ -49,6 +51,9 @@ public class MinimapListener implements Listener {
 
   @Getter
   private final Map<Player, Minimap> playerMinimaps = new HashMap<>();
+  @Getter
+  private final Map<Player, FullscreenMinimap> fullscreenMinimaps = new HashMap<>();
+  private final Map<Player, SteerableLockedView> lockedViews = new HashMap<>();
   private final Map<Player, IntIntImmutablePair> playerSections = new HashMap<>();
   private final Set<UUID> requestedUpdates = new HashSet<>();
   private final VanillaMinimaps plugin;
@@ -118,6 +123,30 @@ public class MinimapListener implements Listener {
       }
       plugin.packetSender().despawnMinimap(minimap);
     }
+
+    closeFullscreen(player);
+  }
+
+  public SteerableLockedView openFullscreen(FullscreenMinimap minimap) {
+    SteerableLockedView view = plugin.steerableViewFactory().lockedView(minimap.getHolder());
+    minimap.spawn(plugin);
+
+    fullscreenMinimaps.put(minimap.getHolder(), minimap);
+    lockedViews.put(minimap.getHolder(), view);
+
+    return view;
+  }
+
+  public void closeFullscreen(Player player) {
+    SteerableLockedView view = lockedViews.remove(player);
+    if (view != null) {
+      view.destroy();
+    }
+
+    FullscreenMinimap fullscreenMinimap = fullscreenMinimaps.remove(player);
+    if (fullscreenMinimap != null) {
+      fullscreenMinimap.despawn(plugin, null);
+    }
   }
 
   @EventHandler
@@ -132,6 +161,7 @@ public class MinimapListener implements Listener {
     }
 
     minimap.setDeathPoint(plugin, event.getPlayer().getLocation());
+    closeFullscreen(event.getPlayer());
   }
 
   @EventHandler

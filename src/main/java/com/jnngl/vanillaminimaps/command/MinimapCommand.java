@@ -94,7 +94,7 @@ public class MinimapCommand extends BrigadierCommand {
     ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
     Player player = serverPlayer.getBukkitEntity();
 
-    getPlugin().getMinimapListener().enableMinimap(player);
+    getPlugin().minimapListener().enableMinimap(player);
     return 1;
   }
 
@@ -102,7 +102,7 @@ public class MinimapCommand extends BrigadierCommand {
     ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
     Player player = serverPlayer.getBukkitEntity();
 
-    getPlugin().getMinimapListener().disableMinimap(player);
+    getPlugin().minimapListener().disableMinimap(player);
     return 1;
   }
 
@@ -292,14 +292,15 @@ public class MinimapCommand extends BrigadierCommand {
       throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
     }
 
-    SteerableLockedView view = getPlugin().getSteerableViewFactory().lockedView(player);
-    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.create(getPlugin(), minimap);
-    fullscreenMinimap.spawn(getPlugin());
+    if (getPlugin().getFullscreenMinimap(player) != null) {
+      getPlugin().minimapListener().closeFullscreen(player);
+      return 1;
+    }
 
-    view.onSneak(v -> {
-      fullscreenMinimap.despawn(getPlugin(), null);
-      view.destroy();
-    });
+    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.create(getPlugin(), minimap);
+    SteerableLockedView view = getPlugin().minimapListener().openFullscreen(fullscreenMinimap);
+
+    view.onSneak(v -> getPlugin().minimapListener().closeFullscreen(player));
 
     return 1;
   }

@@ -31,6 +31,7 @@ import com.jnngl.vanillaminimaps.listener.MinimapBlockListener;
 import com.jnngl.vanillaminimaps.listener.MinimapListener;
 import com.jnngl.vanillaminimaps.map.Minimap;
 import com.jnngl.vanillaminimaps.map.MinimapProvider;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.provider.BuiltinMinimapIconProvider;
 import com.jnngl.vanillaminimaps.map.icon.provider.MinimapIconProvider;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
@@ -75,15 +76,12 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @MonotonicNonNull
   private MinimapWorldRendererProvider worldRendererProvider;
 
-  @Getter
   @MonotonicNonNull
   private MinimapBlockListener minimapBlockListener;
 
-  @Getter
   @MonotonicNonNull
   private MinimapListener minimapListener;
 
-  @Getter
   @MonotonicNonNull
   private SteerableViewFactory steerableViewFactory;
 
@@ -145,13 +143,33 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
     return worldRendererProvider;
   }
 
-  public PassengerRewriter getPassengerRewriter(Player player) {
-    return passengerRewriters.get(player);
+  @Override
+  public MinimapListener minimapListener() {
+    return minimapListener;
+  }
+
+  @Override
+  public MinimapBlockListener minimapBlockListener() {
+    return minimapBlockListener;
+  }
+
+  @Override
+  public SteerableViewFactory steerableViewFactory() {
+    return steerableViewFactory;
   }
 
   @Override
   public Minimap getPlayerMinimap(Player player) {
     return minimapListener.getPlayerMinimaps().get(player);
+  }
+
+  @Override
+  public FullscreenMinimap getFullscreenMinimap(Player player) {
+    return minimapListener.getFullscreenMinimaps().get(player);
+  }
+
+  public PassengerRewriter getPassengerRewriter(Player player) {
+    return passengerRewriters.get(player);
   }
 
   @EventHandler(priority = EventPriority.HIGH)

@@ -19,6 +19,10 @@ package com.jnngl.vanillaminimaps.map;
 
 import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
+import com.jnngl.vanillaminimaps.clientside.SteerableViewFactory;
+import com.jnngl.vanillaminimaps.listener.MinimapBlockListener;
+import com.jnngl.vanillaminimaps.listener.MinimapListener;
+import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.provider.MinimapIconProvider;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.provider.MinimapWorldRendererProvider;
@@ -36,5 +40,13 @@ public interface MinimapProvider {
 
   MinimapWorldRendererProvider worldRendererProvider();
 
+  MinimapListener minimapListener();
+
+  MinimapBlockListener minimapBlockListener();
+
+  SteerableViewFactory steerableViewFactory();
+
   Minimap getPlayerMinimap(Player player);
+
+  FullscreenMinimap getFullscreenMinimap(Player player);
 }

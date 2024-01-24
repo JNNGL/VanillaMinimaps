@@ -40,6 +40,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
   protected final ServerPlayer viewer;
   private final Location origin;
   private Consumer<Void> sneakCallback;
+  private boolean active;
 
   protected byte convertAngle(float angle) {
     return (byte) Math.floor(angle * 256.0F / 360.0F);
@@ -89,6 +90,8 @@ public class NMSSteerableLockedView implements SteerableLockedView {
       int stateId = serverPlayer.inventoryMenu.incrementStateId();
       connection.send(new ClientboundContainerSetContentPacket(0, stateId, EMPTY_INVENTORY, ItemStack.EMPTY), null);
     }, 7L);
+
+    active = true;
   }
 
   protected void inject(Channel channel) {
@@ -187,6 +190,11 @@ public class NMSSteerableLockedView implements SteerableLockedView {
 
   @Override
   public void destroy() {
+    if (!active) {
+      return;
+    }
+
+    active = false;
     ServerPlayer serverPlayer = ((CraftPlayer) player).getHandle();
     ServerGamePacketListenerImpl connection = serverPlayer.connection;
 
