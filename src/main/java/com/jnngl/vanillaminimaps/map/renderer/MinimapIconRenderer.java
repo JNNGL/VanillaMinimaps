@@ -79,7 +79,7 @@ public record MinimapIconRenderer(MinimapIcon icon, @Nullable MinimapIcon fullsc
       return;
     }
 
-    renderIcon(fullscreenIcon, data, mapX, mapZ, (x, y) -> (127 - x) * 128 + y, (x, y) -> y * icon.width() + x);
+    renderIcon(fullscreenIcon, data, mapX, mapZ, (x, y) -> (127 - x) * 128 + y, (x, y) -> y * fullscreenIcon.width() + x);
   }
 
   private void renderIcon(MinimapIcon icon, byte[] data, int mapX, int mapZ,
