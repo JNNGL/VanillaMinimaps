@@ -4,7 +4,9 @@
 
 Fully vanilla minimaps, without any mods.
 
-https://github.com/JNNGL/VanillaMinimaps/assets/45935949/e6318674-5e7f-4bce-8d3f-f3b0ba145555
+https://github.com/JNNGL/VanillaMinimaps/assets/45935949/4a6f9cf4-0575-4a46-852e-da11a18edc56
+
+https://github.com/JNNGL/VanillaMinimaps/assets/45935949/ea7738c9-bd4a-4388-9d65-109aa9233fcc
 
 ### Credits
 
