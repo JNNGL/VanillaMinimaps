@@ -54,7 +54,7 @@ public record MinimapIconRenderer(MinimapIcon icon, @Nullable MinimapIcon fullsc
       trackedZ += 64;
     }
 
-    renderIcon(icon, data, trackedX, trackedZ, (x, y) -> x * 128 + y);
+    renderIcon(icon, data, trackedX, trackedZ, (x, y) -> x * 128 + y, (x, y) -> y * icon.width() + icon.width() - 1 - x);
   }
 
   @Override
@@ -79,10 +79,12 @@ public record MinimapIconRenderer(MinimapIcon icon, @Nullable MinimapIcon fullsc
       return;
     }
 
-    renderIcon(fullscreenIcon, data, mapX, mapZ, (x, y) -> (127 - x) * 128 + y);
+    renderIcon(fullscreenIcon, data, mapX, mapZ, (x, y) -> (127 - x) * 128 + y, (x, y) -> y * icon.width() + x);
   }
 
-  private void renderIcon(MinimapIcon icon, byte[] data, int mapX, int mapZ, BiFunction<Integer, Integer, Integer> indexMapper) {
+  private void renderIcon(MinimapIcon icon, byte[] data, int mapX, int mapZ,
+                          BiFunction<Integer, Integer, Integer> indexMapper,
+                          BiFunction<Integer, Integer, Integer> fetchIndexMapper) {
     int offsetX = -icon.width() / 2;
     int offsetY = -icon.height() / 2;
     for (int y = 0; y < icon.height(); y++) {
@@ -105,7 +107,7 @@ public record MinimapIconRenderer(MinimapIcon icon, @Nullable MinimapIcon fullsc
           break;
         }
 
-        byte color = icon.data()[y * icon.width() + x];
+        byte color = icon.data()[fetchIndexMapper.apply(x, y)];
         if (color == 0) {
           continue;
         }
