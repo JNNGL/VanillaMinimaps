@@ -49,9 +49,9 @@ public class NMSMinimapPacketSender extends AbstractMinimapPacketSender {
     ((CraftPlayer) viewer).getHandle().connection.send(new ClientboundMapItemDataPacket(layer.mapId(), (byte) 0, false, Collections.emptyList(), patch));
   }
 
-  private void spawnItemFrame(ServerPlayerConnection connection, ItemFrame itemFrame) {
+  private void spawnItemFrame(ServerPlayerConnection connection, ItemFrame itemFrame, double offsetY) {
     ServerPlayer player = connection.getPlayer();
-    itemFrame.setPos(player.getX(), player.getY(), player.getZ());
+    itemFrame.setPos(player.getX(), player.getY() + offsetY, player.getZ());
     connection.send(itemFrame.getAddEntityPacket());
     var metadata = itemFrame.getEntityData().getNonDefaultValues();
     if (metadata != null && !metadata.isEmpty()) {
@@ -59,17 +59,18 @@ public class NMSMinimapPacketSender extends AbstractMinimapPacketSender {
     }
   }
 
+  private void spawnItemFrame(ServerPlayerConnection connection, ItemFrame itemFrame) {
+    spawnItemFrame(connection, itemFrame, 0.0);
+  }
+
   public void spawnFixedLayer(Player viewer, MinimapLayer layer) {
-    EntityHandle<?> handle = viewer.getPitch() > 0 ? layer.upperFrame() : layer.lowerFrame();
+    boolean upper = viewer.getPitch() > -30.0F;
+    double offset = !upper ? 3.0 : 1.0;
+    EntityHandle<?> handle = upper ? layer.upperFrame() : layer.lowerFrame();
     ItemFrame frame = (ItemFrame) handle.entity();
 
     ServerPlayerConnection connection = ((CraftPlayer) viewer).getHandle().connection;
-    spawnItemFrame(connection, frame);
-
-    PassengerRewriter rewriter = plugin.getPassengerRewriter(viewer);
-    rewriter.addPassenger(viewer.getEntityId(), frame.getId());
-
-    connection.send(new ClientboundSetPassengersPacket(((CraftPlayer) viewer).getHandle()));
+    spawnItemFrame(connection, frame, offset);
   }
 
   @Override
