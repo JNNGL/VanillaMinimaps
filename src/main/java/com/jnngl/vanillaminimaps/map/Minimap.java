@@ -154,16 +154,19 @@ public final class Minimap {
     if (deathIcon != null) {
       MinimapLayer iconBaseLayer = provider.clientsideMinimapFactory().createMinimapLayer(holder.getWorld(), null);
       SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(deathIcon), true,
-          Config.instance().markers.deathMarker.stickToBorder, deathLocation.getBlockX(), deathLocation.getBlockZ(), 0.05F);
+          Config.instance().markers.deathMarker.stickToBorder, deathLocation.getWorld(), deathLocation.getBlockX(),
+          deathLocation.getBlockZ(), 0.05F);
       secondaryLayers.put("death_point", iconLayer);
 
-      provider.packetSender().spawnLayer(holder, iconBaseLayer);
+      if (iconLayer.getWorld().equals(holder.getWorld())) {
+        provider.packetSender().spawnLayer(holder, iconBaseLayer);
+      }
     }
   }
 
   public Location getDeathPoint() {
     SecondaryMinimapLayer currentDeathPoint = secondaryLayers.get("death_point");
-    return currentDeathPoint != null ? new Location(holder.getWorld(), currentDeathPoint.getPositionX(), 0, currentDeathPoint.getPositionZ()) : null;
+    return currentDeathPoint != null ? new Location(currentDeathPoint.getWorld(), currentDeathPoint.getPositionX(), 0, currentDeathPoint.getPositionZ()) : null;
   }
 
   public Player holder() {

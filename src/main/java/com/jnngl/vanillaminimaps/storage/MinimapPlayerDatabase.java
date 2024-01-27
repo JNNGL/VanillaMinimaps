@@ -100,10 +100,13 @@ public class MinimapPlayerDatabase {
           float depth = 0.05F + minimap.secondaryLayers().size() * 0.01F;
           MinimapLayer iconBaseLayer = provider.clientsideMinimapFactory().createMinimapLayer(player.getWorld(), null);
           SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
-              Config.instance().markers.customMarkers.stickToBorder, marker.getLocation().getBlockX(), marker.getLocation().getBlockZ(), depth);
+              Config.instance().markers.customMarkers.stickToBorder, marker.getLocation().getWorld(),
+              marker.getLocation().getBlockX(), marker.getLocation().getBlockZ(), depth);
           minimap.secondaryLayers().put(marker.getName(), iconLayer);
 
-          provider.packetSender().spawnLayer(player, iconBaseLayer);
+          if (iconLayer.getWorld() == null || player.getWorld().equals(iconLayer.getWorld())) {
+            provider.packetSender().spawnLayer(player, iconBaseLayer);
+          }
         }
       }
     }
@@ -141,7 +144,7 @@ public class MinimapPlayerDatabase {
         return;
       }
 
-      Location location = new Location(player.getWorld(), marker.getPositionX(), 0, marker.getPositionZ());
+      Location location = new Location(marker.getWorld(), marker.getPositionX(), 0, marker.getPositionZ());
       DatabaseMarkerModel markerModel = new DatabaseMarkerModel(0, name, location, renderer.icon().key(), playerModel);
       markers.add(markerModel);
     });

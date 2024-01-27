@@ -94,7 +94,7 @@ public class MinimapListener implements Listener {
     if (playerIcon != null) {
       MinimapLayer playerIconBaseLayer = minimapFactory.createMinimapLayer(player.getWorld(), null);
       MinimapIconRenderer playerIconRenderer = new MinimapIconRenderer(playerIcon, offscreenPlayerIcon);
-      SecondaryMinimapLayer playerIconLayer = new MarkerMinimapLayer(playerIconBaseLayer, playerIconRenderer, false, false, 64, 64, 0.4F);
+      SecondaryMinimapLayer playerIconLayer = new MarkerMinimapLayer(playerIconBaseLayer, playerIconRenderer, false, false, null, 64, 64, 0.4F);
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);

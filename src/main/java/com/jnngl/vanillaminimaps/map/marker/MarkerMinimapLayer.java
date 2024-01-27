@@ -20,11 +20,12 @@ package com.jnngl.vanillaminimaps.map.marker;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
+import org.bukkit.World;
 
 public class MarkerMinimapLayer extends SecondaryMinimapLayer {
 
   public MarkerMinimapLayer(MinimapLayer baseLayer, SecondaryMinimapLayerRenderer renderer, boolean trackLocation,
-                            boolean keepOnEdge, int positionX, int positionZ, float depth) {
-    super(baseLayer, renderer, trackLocation, keepOnEdge, positionX, positionZ, depth);
+                            boolean keepOnEdge, World world, int positionX, int positionZ, float depth) {
+    super(baseLayer, renderer, trackLocation, keepOnEdge, world, positionX, positionZ, depth);
   }
 }

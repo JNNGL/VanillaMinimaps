@@ -315,7 +315,7 @@ public class MinimapCommand extends BrigadierCommand {
     float depth = 0.05F + minimap.secondaryLayers().size() * 0.01F;
     MinimapLayer iconBaseLayer = getPlugin().clientsideMinimapFactory().createMinimapLayer(player.getWorld(), null);
     SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
-        Config.instance().markers.customMarkers.stickToBorder, (int) player.getX(), (int) player.getZ(), depth);
+        Config.instance().markers.customMarkers.stickToBorder, player.getWorld(), (int) player.getX(), (int) player.getZ(), depth);
     minimap.secondaryLayers().put(markerName, iconLayer);
 
     getPlugin().packetSender().spawnLayer(player, iconBaseLayer);

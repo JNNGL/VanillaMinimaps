@@ -21,6 +21,7 @@ import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.World;
 
 @Getter
 @Setter
@@ -31,6 +32,7 @@ public class SecondaryMinimapLayer {
   private SecondaryMinimapLayerRenderer renderer;
   private boolean trackLocation;
   private boolean keepOnEdge;
+  private World world;
   private int positionX;
   private int positionZ;
   private float depth;

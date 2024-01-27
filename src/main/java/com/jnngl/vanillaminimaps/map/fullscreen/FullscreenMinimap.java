@@ -148,6 +148,10 @@ public class FullscreenMinimap {
 
         secondaryLayers.forEach(secondary -> {
           SecondaryMinimapLayer baseLayer = secondary.base();
+          if (baseLayer.getWorld() != null && !holder.getWorld().equals(baseLayer.getWorld())) {
+            return;
+          }
+
           if (baseLayer.getRenderer() != null) {
             baseLayer.getRenderer().renderFullscreen(FullscreenMinimap.this, secondary, layer.chunkX(), layer.chunkZ(), buffer);
           }

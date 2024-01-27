@@ -26,7 +26,9 @@ public abstract class AbstractMinimapPacketSender implements MinimapPacketSender
   public void spawnMinimap(Minimap minimap) {
     spawnLayer(minimap.holder(), minimap.primaryLayer());
     for (SecondaryMinimapLayer secondary : minimap.secondaryLayers().values()) {
-      spawnLayer(minimap.holder(), secondary.getBaseLayer());
+      if (secondary.getWorld() == null || secondary.getWorld().equals(minimap.holder().getWorld())) {
+        spawnLayer(minimap.holder(), secondary.getBaseLayer());
+      }
     }
   }
 
