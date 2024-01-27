@@ -103,6 +103,7 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @Override
   @SneakyThrows
   public void onEnable() {
+    System.setProperty("com.j256.simplelogging.level", "ERROR");
     PLUGIN.set(this);
 
     Path dataPath = getDataFolder().toPath();

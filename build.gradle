@@ -1,68 +1,68 @@
 plugins {
-    id 'java'
-    id 'io.papermc.paperweight.userdev' version '1.5.11'
-    id 'xyz.jpenilla.run-paper' version '2.2.2'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id("java")
+    id("io.papermc.paperweight.userdev").version("1.5.11")
+    id("xyz.jpenilla.run-paper").version("2.2.2")
+    id("com.github.johnrengelman.shadow").version("7.1.2")
 }
 
-group = 'com.jnngl'
-version = '1.0.0-SNAPSHOT'
+setGroup("com.jnngl")
+setVersion("1.0.0-SNAPSHOT")
 
 repositories {
     mavenCentral()
     maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
+        setName("papermc-repo")
+        setUrl("https://repo.papermc.io/repository/maven-public/")
     }
     maven {
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/groups/public/"
+        setName("sonatype")
+        setUrl("https://oss.sonatype.org/content/groups/public/")
     }
 }
 
 dependencies {
-    paperweightDevelopmentBundle 'io.papermc.paper:dev-bundle:1.20.4-R0.1-SNAPSHOT'
-    implementation 'net.elytrium:serializer:1.1.1'
-    implementation 'com.jnngl:mapcolor:1.0.1'
-    compileOnly 'io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    implementation 'com.j256.ormlite:ormlite-jdbc:6.1'
-    implementation 'org.xerial:sqlite-jdbc:3.45.0.0'
-    implementation 'org.bstats:bstats-bukkit:3.0.2'
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.20.4-R0.1-SNAPSHOT")
+    implementation("net.elytrium:serializer:1.1.1")
+    implementation("com.jnngl:mapcolor:1.0.1")
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
+    compileOnly("org.projectlombok:lombok:1.18.30")
+    implementation("com.j256.ormlite:ormlite-jdbc:6.1")
+    implementation("org.xerial:sqlite-jdbc:3.45.0.0")
+    implementation("org.bstats:bstats-bukkit:3.0.2")
 }
 
 shadowJar {
-    relocate 'net.elytrium.serializer', 'com.jnngl.vanillaminimaps.serializer'
-    relocate 'org.bstats', 'com.jnngl.vanillaminimaps.metrics'
-    exclude 'org/slf4j/**'
+    relocate("net.elytrium.serializer", "com.jnngl.vanillaminimaps.serializer")
+    relocate("org.bstats", "com.jnngl.vanillaminimaps.metrics")
+    exclude("org/slf4j/**")
     minimize()
 }
 
 def targetJavaVersion = 17
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
+    setSourceCompatibility(javaVersion)
+    setTargetCompatibility(javaVersion)
     if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+        getToolchain().setLanguageVersion(JavaLanguageVersion.of(targetJavaVersion))
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
+tasks.withType(JavaCompile).configureEach({
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
+        getOptions().getRelease().set(targetJavaVersion)
     }
-}
+})
 
 processResources {
     def props = [version: version]
-    inputs.properties props
-    filteringCharset 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
+    getInputs().properties(props)
+    filteringCharset("UTF-8")
+    filesMatching("plugin.yml") {
+        expand(props)
     }
 }
 
-reobfJar.dependsOn shadowJar
-assemble.dependsOn reobfJar
+reobfJar.dependsOn(shadowJar)
+assemble.dependsOn(reobfJar)
