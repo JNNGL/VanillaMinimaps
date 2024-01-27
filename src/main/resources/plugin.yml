@@ -1,4 +1,7 @@
 name: VanillaMinimaps
+description: Fully vanilla minimaps, without any mods.
+author: JNNGL
 version: '${version}'
+website: https://github.com/JNNGL/VanillaMinimaps
 main: com.jnngl.vanillaminimaps.VanillaMinimaps
 api-version: '1.20'
