@@ -77,8 +77,4 @@ public class Config extends YamlSerializable {
 
     public int segmentsZ = 3;
   }
-
-  @NewLine
-  @Comment(@CommentValue("Don't touch this."))
-  public int databaseVersion = 0;
 }

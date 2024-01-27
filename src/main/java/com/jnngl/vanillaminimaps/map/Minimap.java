@@ -20,6 +20,7 @@ package com.jnngl.vanillaminimaps.map;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
 import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
+import com.jnngl.vanillaminimaps.map.marker.MarkerMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.encoder.PrimaryMapEncoder;
@@ -152,12 +153,17 @@ public final class Minimap {
     MinimapIcon deathIcon = provider.iconProvider().getIcon("death");
     if (deathIcon != null) {
       MinimapLayer iconBaseLayer = provider.clientsideMinimapFactory().createMinimapLayer(holder.getWorld(), null);
-      SecondaryMinimapLayer iconLayer = new SecondaryMinimapLayer(iconBaseLayer, new MinimapIconRenderer(deathIcon), true,
+      SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(deathIcon), true,
           Config.instance().markers.deathMarker.stickToBorder, deathLocation.getBlockX(), deathLocation.getBlockZ(), 0.05F);
       secondaryLayers.put("death_point", iconLayer);
 
       provider.packetSender().spawnLayer(holder, iconBaseLayer);
     }
+  }
+
+  public Location getDeathPoint() {
+    SecondaryMinimapLayer currentDeathPoint = secondaryLayers.get("death_point");
+    return currentDeathPoint != null ? new Location(holder.getWorld(), currentDeathPoint.getPositionX(), 0, currentDeathPoint.getPositionZ()) : null;
   }
 
   public Player holder() {

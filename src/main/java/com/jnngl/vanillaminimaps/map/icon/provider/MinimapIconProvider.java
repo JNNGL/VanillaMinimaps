@@ -35,7 +35,7 @@ public interface MinimapIconProvider {
   default Set<String> genericIconKeys() {
     Set<String> special = specialIconKeys();
     return allKeys().stream()
-        .filter(key -> !specialIconKeys().contains(key))
+        .filter(key -> !special.contains(key))
         .collect(Collectors.toSet());
   }
 }

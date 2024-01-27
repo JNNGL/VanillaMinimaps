@@ -15,13 +15,36 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.map.fullscreen;
+package com.jnngl.vanillaminimaps.storage;
 
-import com.jnngl.vanillaminimaps.map.MinimapLayer;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.bukkit.Location;
 
-public record FullscreenMinimapLayer(MinimapLayer base, int chunkX, int chunkZ, int screenX, int screenY) {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@DatabaseTable(tableName = "marker")
+public class DatabaseMarkerModel {
+
+  @DatabaseField(generatedId = true)
+  private int id;
+
+  @DatabaseField
+  private String name;
+
+  @DatabaseField(persisterClass = LocationPersister.class)
+  private Location location;
+
+  @DatabaseField
+  private String icon;
+
+  @DatabaseField(foreign = true, canBeNull = false, foreignAutoCreate = true, foreignAutoRefresh = true)
+  private DatabasePlayerModel player;
 
 }

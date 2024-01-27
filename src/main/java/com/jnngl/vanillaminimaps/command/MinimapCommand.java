@@ -26,6 +26,7 @@ import com.jnngl.vanillaminimaps.map.MinimapScreenPosition;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
+import com.jnngl.vanillaminimaps.map.marker.MarkerMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -39,6 +40,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.entity.Player;
 
+import java.sql.SQLException;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -90,11 +92,27 @@ public class MinimapCommand extends BrigadierCommand {
     );
   }
 
+  private void save(Minimap minimap) throws CommandSyntaxException {
+    try {
+      getPlugin().playerDataStorage().save(minimap);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to save player data.");
+    }
+  }
+
   private int enable(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
     ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
     Player player = serverPlayer.getBukkitEntity();
 
-    getPlugin().minimapListener().enableMinimap(player);
+    try {
+      getPlugin().playerDataStorage().enableMinimap(player);
+      getPlugin().playerDataStorage().restore(getPlugin(), player);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to load player data.");
+    }
+
     return 1;
   }
 
@@ -103,6 +121,14 @@ public class MinimapCommand extends BrigadierCommand {
     Player player = serverPlayer.getBukkitEntity();
 
     getPlugin().minimapListener().disableMinimap(player);
+
+    try {
+      getPlugin().playerDataStorage().disableMinimap(player);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to save player data.");
+    }
+
     return 1;
   }
 
@@ -117,6 +143,8 @@ public class MinimapCommand extends BrigadierCommand {
 
     minimap.screenPosition(position);
     minimap.update(getPlugin());
+    save(minimap);
+
     return 1;
   }
 
@@ -190,6 +218,7 @@ public class MinimapCommand extends BrigadierCommand {
 
     consumer.accept(minimap, marker);
     minimap.update(getPlugin());
+    save(minimap);
   }
 
   private int changeMarkerIcon(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
@@ -245,6 +274,7 @@ public class MinimapCommand extends BrigadierCommand {
 
     getPlugin().packetSender().despawnLayer(minimap.holder(), marker.getBaseLayer());
     minimap.update(getPlugin());
+    save(minimap);
 
     return 1;
   }
@@ -271,14 +301,26 @@ public class MinimapCommand extends BrigadierCommand {
       throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Marker with this name already exists.");
     }
 
+    int markers = (int) minimap.secondaryLayers().entrySet().stream()
+        .filter(entry -> !"player".equals(entry.getKey())
+            && !"death_point".equals(entry.getKey())
+            && entry.getValue() instanceof MarkerMinimapLayer)
+        .count();
+
+    if (markers >= Config.instance().markers.customMarkers.limit) {
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () ->
+          "You cannot place more than " + Config.instance().markers.customMarkers.limit + " markers.");
+    }
+
     float depth = 0.05F + minimap.secondaryLayers().size() * 0.01F;
     MinimapLayer iconBaseLayer = getPlugin().clientsideMinimapFactory().createMinimapLayer(player.getWorld(), null);
-    SecondaryMinimapLayer iconLayer = new SecondaryMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
+    SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
         Config.instance().markers.customMarkers.stickToBorder, (int) player.getX(), (int) player.getZ(), depth);
     minimap.secondaryLayers().put(markerName, iconLayer);
 
     getPlugin().packetSender().spawnLayer(player, iconBaseLayer);
     minimap.update(getPlugin());
+    save(minimap);
 
     return 1;
   }

@@ -28,12 +28,14 @@ import com.jnngl.vanillaminimaps.map.MinimapLayer;
 import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
 import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.MinimapIcon;
+import com.jnngl.vanillaminimaps.map.marker.MarkerMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
 import it.unimi.dsi.fastutil.ints.IntIntImmutablePair;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -64,16 +66,18 @@ public class MinimapListener implements Listener {
 
   @EventHandler
   public void onJoin(PlayerJoinEvent event) {
-    if (!Config.instance().enabledByDefault) {
-      return;
-    }
-
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> enableMinimap(event.getPlayer()));
+    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+      try {
+        plugin.playerDataStorage().restore(plugin, event.getPlayer());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
-  public void enableMinimap(Player player) {
+  public Minimap enableMinimap(Player player) {
     if (playerMinimaps.containsKey(player)) {
-      return;
+      return playerMinimaps.get(player);
     }
 
     ClientsideMinimapFactory minimapFactory = plugin.clientsideMinimapFactory();
@@ -90,7 +94,7 @@ public class MinimapListener implements Listener {
     if (playerIcon != null) {
       MinimapLayer playerIconBaseLayer = minimapFactory.createMinimapLayer(player.getWorld(), null);
       MinimapIconRenderer playerIconRenderer = new MinimapIconRenderer(playerIcon, offscreenPlayerIcon);
-      SecondaryMinimapLayer playerIconLayer = new SecondaryMinimapLayer(playerIconBaseLayer, playerIconRenderer, false, false, 64, 64, 0.1F);
+      SecondaryMinimapLayer playerIconLayer = new MarkerMinimapLayer(playerIconBaseLayer, playerIconRenderer, false, false, 64, 64, 0.4F);
       minimap.secondaryLayers().put("player", playerIconLayer);
 
       packetSender.spawnLayer(player, playerIconBaseLayer);
@@ -111,6 +115,7 @@ public class MinimapListener implements Listener {
     }
 
     minimap.update(plugin, player.getX(), player.getZ(), true);
+    return minimap;
   }
 
   public void disableMinimap(Player player) {
@@ -213,10 +218,12 @@ public class MinimapListener implements Listener {
     minimap.respawn(plugin);
   }
 
+  @SneakyThrows
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-      disableMinimap(event.getPlayer());
-    });
+    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () ->
+        disableMinimap(event.getPlayer()));
+    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    plugin.playerDataStorage().save(minimap);
   }
 }

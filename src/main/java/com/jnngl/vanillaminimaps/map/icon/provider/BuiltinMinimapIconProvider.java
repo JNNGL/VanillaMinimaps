@@ -99,7 +99,7 @@ public class BuiltinMinimapIconProvider implements MinimapIconProvider {
     }
 
     if (image != null) {
-      return MinimapIcon.fromBufferedImage(image);
+      return MinimapIcon.fromBufferedImage(key, image);
     } else {
       return null;
     }

@@ -15,13 +15,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jnngl.vanillaminimaps.clientside;
+package com.jnngl.vanillaminimaps.map.marker;
 
-import java.util.function.Consumer;
+import com.jnngl.vanillaminimaps.map.MinimapLayer;
+import com.jnngl.vanillaminimaps.map.SecondaryMinimapLayer;
+import com.jnngl.vanillaminimaps.map.renderer.SecondaryMinimapLayerRenderer;
 
-public interface SteerableLockedView {
+public class MarkerMinimapLayer extends SecondaryMinimapLayer {
 
-  void onSneak(Consumer<Void> callback);
-
-  void destroy();
+  public MarkerMinimapLayer(MinimapLayer baseLayer, SecondaryMinimapLayerRenderer renderer, boolean trackLocation,
+                            boolean keepOnEdge, int positionX, int positionZ, float depth) {
+    super(baseLayer, renderer, trackLocation, keepOnEdge, positionX, positionZ, depth);
+  }
 }

@@ -38,6 +38,7 @@ import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.provider.BuiltinMinimapWorldRendererProvider;
 import com.jnngl.vanillaminimaps.map.renderer.world.provider.MinimapWorldRendererProvider;
+import com.jnngl.vanillaminimaps.storage.MinimapPlayerDatabase;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
@@ -85,6 +86,9 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @MonotonicNonNull
   private SteerableViewFactory steerableViewFactory;
 
+  @MonotonicNonNull
+  private MinimapPlayerDatabase playerDataStorage;
+
   @Override
   @SneakyThrows
   public void onEnable() {
@@ -93,6 +97,8 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
 
     Path iconsPath = dataPath.resolve("icons");
     Files.createDirectories(iconsPath);
+
+    playerDataStorage = new MinimapPlayerDatabase(dataPath.resolve("players.db"));
 
     defaultClientsideMinimapFactory = new NMSClientsideMinimapFactory();
     defaultMinimapPacketSender = new NMSMinimapPacketSender(this);
@@ -116,6 +122,12 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
     minimapBlockListener.registerListener(this);
 
     new MinimapCommand(this).register(NMSCommandDispatcherAccessor.vanillaDispatcher());
+  }
+
+  @Override
+  @SneakyThrows
+  public void onDisable() {
+    playerDataStorage.close();
   }
 
   @Override
@@ -156,6 +168,11 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @Override
   public SteerableViewFactory steerableViewFactory() {
     return steerableViewFactory;
+  }
+
+  @Override
+  public MinimapPlayerDatabase playerDataStorage() {
+    return playerDataStorage;
   }
 
   @Override

@@ -24,7 +24,7 @@ import com.jnngl.mapcolor.palette.Palette;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public record MinimapIcon(byte[] data, int width, int height) {
+public record MinimapIcon(String key, byte[] data, int width, int height) {
 
   private static final ThreadLocal<ColorMatcher> COLOR_MATCHER = ThreadLocal.withInitial(() -> new CachedColorMatcher(Palette.NEWEST_PALETTE) {
 
@@ -42,9 +42,9 @@ public record MinimapIcon(byte[] data, int width, int height) {
     }
   });
 
-  public static MinimapIcon fromBufferedImage(BufferedImage image) {
+  public static MinimapIcon fromBufferedImage(String key, BufferedImage image) {
     ColorMatcher matcher = COLOR_MATCHER.get();
     byte[] data = matcher.matchImage(image);
-    return new MinimapIcon(data, image.getWidth(), image.getHeight());
+    return new MinimapIcon(key, data, image.getWidth(), image.getHeight());
   }
 }

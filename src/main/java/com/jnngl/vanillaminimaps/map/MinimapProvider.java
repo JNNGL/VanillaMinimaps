@@ -26,6 +26,7 @@ import com.jnngl.vanillaminimaps.map.fullscreen.FullscreenMinimap;
 import com.jnngl.vanillaminimaps.map.icon.provider.MinimapIconProvider;
 import com.jnngl.vanillaminimaps.map.renderer.world.WorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.provider.MinimapWorldRendererProvider;
+import com.jnngl.vanillaminimaps.storage.MinimapPlayerDatabase;
 import org.bukkit.entity.Player;
 
 public interface MinimapProvider {
@@ -45,6 +46,8 @@ public interface MinimapProvider {
   MinimapBlockListener minimapBlockListener();
 
   SteerableViewFactory steerableViewFactory();
+
+  MinimapPlayerDatabase playerDataStorage();
 
   Minimap getPlayerMinimap(Player player);
 
