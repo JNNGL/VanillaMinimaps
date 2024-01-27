@@ -115,6 +115,10 @@ public final class Minimap {
     provider.packetSender().updateLayer(holder, primaryLayer, 0, 0, 128, 128, layer);
 
     for (SecondaryMinimapLayer secondary : secondaryLayers.values()) {
+      if (secondary.getWorld() != null && !secondary.getWorld().equals(holder.getWorld())) {
+        continue;
+      }
+
       byte[] secondaryLayer = new byte[128 * 128];
       if (secondary.getRenderer() != null) {
         secondary.getRenderer().render(this, secondary, secondaryLayer);
