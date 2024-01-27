@@ -66,7 +66,7 @@ public class FullscreenMinimap {
 
   public CompletableFuture<Void> fadeIn(MinimapProvider provider, Function<Double, Double> easing, int duration) {
     CompletableFuture<Void> transitionFuture = new CompletableFuture<>();
-    BukkitTask task = Bukkit.getScheduler().runTaskTimer(VanillaMinimaps.getPlugin(VanillaMinimaps.class), new Runnable() {
+    BukkitTask task = Bukkit.getScheduler().runTaskTimer(VanillaMinimaps.get(), new Runnable() {
 
       private int tick = 0;
 

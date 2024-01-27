@@ -57,8 +57,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider, Listener {
+
+  private static final AtomicReference<VanillaMinimaps> PLUGIN = new AtomicReference<>();
+
+  public static VanillaMinimaps get() {
+    return PLUGIN.get();
+  }
 
   @Getter
   private final Map<Player, PassengerRewriter> passengerRewriters = new HashMap<>();
@@ -93,6 +100,8 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   @Override
   @SneakyThrows
   public void onEnable() {
+    PLUGIN.set(this);
+
     Path dataPath = getDataFolder().toPath();
     Config.instance().reload(dataPath.resolve("config.yml"));
     BlockConfig.instance().reload(dataPath.resolve("blocks.yml"));

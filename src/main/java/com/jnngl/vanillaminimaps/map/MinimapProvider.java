@@ -17,6 +17,7 @@
 
 package com.jnngl.vanillaminimaps.map;
 
+import com.jnngl.vanillaminimaps.VanillaMinimaps;
 import com.jnngl.vanillaminimaps.clientside.ClientsideMinimapFactory;
 import com.jnngl.vanillaminimaps.clientside.MinimapPacketSender;
 import com.jnngl.vanillaminimaps.clientside.SteerableViewFactory;
@@ -52,4 +53,8 @@ public interface MinimapProvider {
   Minimap getPlayerMinimap(Player player);
 
   FullscreenMinimap getFullscreenMinimap(Player player);
+
+  static MinimapProvider get() {
+    return VanillaMinimaps.get();
+  }
 }
