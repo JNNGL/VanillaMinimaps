@@ -17,6 +17,7 @@
 
 package com.jnngl.vanillaminimaps.map.renderer.world;
 
+import com.jnngl.vanillaminimaps.config.BlockConfig;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.WorldMapCache;
 import net.minecraft.core.BlockPos;
@@ -48,7 +49,10 @@ public class FlatWorldMinimapRenderer implements CacheableWorldMinimapRenderer {
   private void storeBlockColor(byte[] data, int index, Block block) {
     LevelAccessor accessor = ((CraftBlock) block).getHandle();
     BlockState state = ((CraftBlockData) block.getBlockData()).getState();
-    MapColor color = state.getMapColor(accessor, new BlockPos(block.getX(), block.getY(), block.getZ()));
+    MapColor color = BlockConfig.instance().getResolvedOverrides().get(state);
+    if (color == null) {
+      color = state.getMapColor(accessor, new BlockPos(block.getX(), block.getY(), block.getZ()));
+    }
     int brightnessId = (block.getLightLevel() >> 2) - 1;
     if (brightnessId < 0) {
       brightnessId = 3;

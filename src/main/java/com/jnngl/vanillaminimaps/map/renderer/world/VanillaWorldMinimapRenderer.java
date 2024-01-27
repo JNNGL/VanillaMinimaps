@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+import com.jnngl.vanillaminimaps.config.BlockConfig;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.CacheableWorldMinimapRenderer;
 import com.jnngl.vanillaminimaps.map.renderer.world.cache.WorldMapCache;
 import net.minecraft.core.BlockPos;
@@ -88,7 +89,11 @@ public class VanillaWorldMinimapRenderer implements CacheableWorldMinimapRendere
       }
 
       d1 += k3;
-      multiset.add(blockState.getMapColor(level, blockPos1));
+      MapColor color = BlockConfig.instance().getResolvedOverrides().get(blockState);
+      if (color == null) {
+        color = blockState.getMapColor(level, blockPos1);
+      }
+      multiset.add(color);
     }
 
     return d1;

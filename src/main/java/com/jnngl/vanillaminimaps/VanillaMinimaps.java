@@ -25,6 +25,7 @@ import com.jnngl.vanillaminimaps.clientside.impl.NMSMinimapPacketSender;
 import com.jnngl.vanillaminimaps.clientside.impl.NMSSteerableViewFactory;
 import com.jnngl.vanillaminimaps.command.MinimapCommand;
 import com.jnngl.vanillaminimaps.command.NMSCommandDispatcherAccessor;
+import com.jnngl.vanillaminimaps.config.BlockConfig;
 import com.jnngl.vanillaminimaps.config.Config;
 import com.jnngl.vanillaminimaps.injection.PassengerRewriter;
 import com.jnngl.vanillaminimaps.listener.MinimapBlockListener;
@@ -94,6 +95,7 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
   public void onEnable() {
     Path dataPath = getDataFolder().toPath();
     Config.instance().reload(dataPath.resolve("config.yml"));
+    BlockConfig.instance().reload(dataPath.resolve("blocks.yml"));
 
     Path iconsPath = dataPath.resolve("icons");
     Files.createDirectories(iconsPath);
