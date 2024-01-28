@@ -6,7 +6,7 @@ plugins {
 }
 
 setGroup("com.jnngl")
-setVersion("1.0.0")
+setVersion("1.0.1-SNAPSHOT")
 
 repositories {
     mavenCentral()
