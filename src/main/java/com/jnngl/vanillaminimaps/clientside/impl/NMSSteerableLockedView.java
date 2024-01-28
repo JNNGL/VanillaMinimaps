@@ -21,10 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
 import com.jnngl.vanillaminimaps.clientside.SteerableLockedView;
 import com.mojang.authlib.GameProfile;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
@@ -112,7 +109,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
 
   protected void inject(Channel channel) {
     channel.pipeline().addBefore("packet_handler", "view_handler",
-        new ChannelDuplexHandler() {
+        new ChannelInboundHandlerAdapter() {
 
           private static final Set<Class<? extends Packet<?>>> BLOCKED_INBOUND_PACKETS =
               Set.of(
@@ -137,7 +134,11 @@ public class NMSSteerableLockedView implements SteerableLockedView {
                   ServerboundRenameItemPacket.class,
                   ServerboundPlayerActionPacket.class,
                   ServerboundSwingPacket.class,
-                  ServerboundPlayerAbilitiesPacket.class
+                  ServerboundPlayerAbilitiesPacket.class,
+                  ServerboundClientCommandPacket.class,
+                  ServerboundMovePlayerPacket.class,
+                  ServerboundMoveVehiclePacket.class,
+                  ServerboundPaddleBoatPacket.class
               );
 
           @Override
@@ -152,36 +153,10 @@ public class NMSSteerableLockedView implements SteerableLockedView {
                   sneakCallback.accept(null);
                 }
               }
-            }
-
-            super.channelRead(ctx, msg);
-          }
-
-          @Override
-          public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-            if (msg instanceof ClientboundGameEventPacket packet) {
-              if (packet.getEvent() == ClientboundGameEventPacket.CHANGE_GAME_MODE &&
-                  packet.getParam() != GameType.ADVENTURE.getId()) {
-                return;
-              }
-            } else if (msg instanceof ClientboundPlayerInfoUpdatePacket packet &&
-                packet.actions().contains(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE)) {
-              EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions = packet.actions();
-              List<ClientboundPlayerInfoUpdatePacket.Entry> entries = new ArrayList<>();
-              packet.entries().forEach(entry -> {
-                if (entry.gameMode() == GameType.SPECTATOR || !entry.profileId().equals(player.getUniqueId())) {
-                  entries.add(entry);
-                }
-              });
-
-              if (!entries.isEmpty()) {
-                super.write(ctx, new ClientboundPlayerInfoUpdatePacket(actions, entries), promise);
-              }
-
               return;
             }
 
-            super.write(ctx, msg, promise);
+            super.channelRead(ctx, msg);
           }
 
           @Override
@@ -214,7 +189,6 @@ public class NMSSteerableLockedView implements SteerableLockedView {
     ServerPlayer serverPlayer = ((CraftPlayer) player).getHandle();
     ServerGamePacketListenerImpl connection = serverPlayer.connection;
 
-    deject(connection.connection.channel);
     connection.send(new ClientboundSetCameraPacket(serverPlayer));
     connection.send(new ClientboundRemoveEntitiesPacket(viewer.getId()));
     List<SynchedEntityData.DataValue<?>> metadata = serverPlayer.getEntityData().getNonDefaultValues();
@@ -232,6 +206,9 @@ public class NMSSteerableLockedView implements SteerableLockedView {
     );
     connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, serverPlayer.gameMode.getGameModeForPlayer().getId()));
 
-    Bukkit.getScheduler().runTask(VanillaMinimaps.get(), () -> player.teleport(origin));
+    Bukkit.getScheduler().runTask(VanillaMinimaps.get(), () -> {
+      player.teleport(origin);
+      deject(connection.connection.channel);
+    });
   }
 }
