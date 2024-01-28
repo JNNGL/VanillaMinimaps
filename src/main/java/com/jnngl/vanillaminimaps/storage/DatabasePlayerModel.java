@@ -38,7 +38,7 @@ import java.util.UUID;
 @DatabaseTable(tableName = "player")
 public class DatabasePlayerModel {
 
-  @DatabaseField(id = true, canBeNull = false, dataType = DataType.UUID)
+  @DatabaseField(id = true, dataType = DataType.UUID)
   private UUID holder;
 
   @DatabaseField

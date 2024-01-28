@@ -44,7 +44,7 @@ public class DatabaseMarkerModel {
   @DatabaseField
   private String icon;
 
-  @DatabaseField(foreign = true, canBeNull = false, foreignAutoCreate = true, foreignAutoRefresh = true)
+  @DatabaseField(foreign = true, foreignAutoCreate = true, foreignAutoRefresh = true)
   private DatabasePlayerModel player;
 
 }
