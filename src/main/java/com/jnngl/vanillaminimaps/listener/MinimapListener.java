@@ -48,6 +48,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
+import org.jetbrains.annotations.Nullable;
 
 public class MinimapListener implements Listener {
 
@@ -118,7 +119,8 @@ public class MinimapListener implements Listener {
     return minimap;
   }
 
-  public void disableMinimap(Player player) {
+  @Nullable
+  public Minimap disableMinimap(Player player) {
     playerSections.remove(player.getUniqueId());
     Minimap minimap = playerMinimaps.remove(player.getUniqueId());
     if (minimap != null) {
@@ -130,6 +132,7 @@ public class MinimapListener implements Listener {
     }
 
     closeFullscreen(player);
+    return minimap;
   }
 
   public SteerableLockedView openFullscreen(FullscreenMinimap minimap) {
@@ -221,9 +224,11 @@ public class MinimapListener implements Listener {
   @SneakyThrows
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () ->
-        disableMinimap(event.getPlayer()));
-    Minimap minimap = playerMinimaps.get(event.getPlayer().getUniqueId());
-    plugin.playerDataStorage().save(minimap);
+    Minimap minimap = disableMinimap(event.getPlayer());
+
+    // minimap can be null if player has it disabled
+    if (minimap != null) {
+      plugin.playerDataStorage().save(minimap);
+    }
   }
 }
