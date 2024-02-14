@@ -197,12 +197,12 @@ public final class VanillaMinimaps extends JavaPlugin implements MinimapProvider
 
   @Override
   public Minimap getPlayerMinimap(Player player) {
-    return minimapListener.getPlayerMinimaps().get(player);
+    return minimapListener.getPlayerMinimaps().get(player.getUniqueId());
   }
 
   @Override
   public FullscreenMinimap getFullscreenMinimap(Player player) {
-    return minimapListener.getFullscreenMinimaps().get(player);
+    return minimapListener.getFullscreenMinimaps().get(player.getUniqueId());
   }
 
   public PassengerRewriter getPassengerRewriter(Player player) {

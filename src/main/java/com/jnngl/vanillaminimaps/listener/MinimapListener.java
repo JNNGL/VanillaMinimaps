@@ -48,15 +48,16 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
+import org.jetbrains.annotations.Nullable;
 
 public class MinimapListener implements Listener {
 
   @Getter
-  private final Map<Player, Minimap> playerMinimaps = new HashMap<>();
+  private final Map<UUID, Minimap> playerMinimaps = new HashMap<>();
   @Getter
-  private final Map<Player, FullscreenMinimap> fullscreenMinimaps = new HashMap<>();
-  private final Map<Player, SteerableLockedView> lockedViews = new HashMap<>();
-  private final Map<Player, IntIntImmutablePair> playerSections = new HashMap<>();
+  private final Map<UUID, FullscreenMinimap> fullscreenMinimaps = new HashMap<>();
+  private final Map<UUID, SteerableLockedView> lockedViews = new HashMap<>();
+  private final Map<UUID, IntIntImmutablePair> playerSections = new HashMap<>();
   private final Set<UUID> requestedUpdates = new HashSet<>();
   private final VanillaMinimaps plugin;
 
@@ -76,8 +77,8 @@ public class MinimapListener implements Listener {
   }
 
   public Minimap enableMinimap(Player player) {
-    if (playerMinimaps.containsKey(player)) {
-      return playerMinimaps.get(player);
+    if (playerMinimaps.containsKey(player.getUniqueId())) {
+      return playerMinimaps.get(player.getUniqueId());
     }
 
     ClientsideMinimapFactory minimapFactory = plugin.clientsideMinimapFactory();
@@ -87,7 +88,7 @@ public class MinimapListener implements Listener {
     Minimap minimap = minimapFactory.createMinimap(player, Config.instance().defaultPosition, worldRenderer);
     packetSender.spawnMinimap(minimap);
 
-    playerMinimaps.put(player, minimap);
+    playerMinimaps.put(player.getUniqueId(), minimap);
 
     MinimapIcon playerIcon = plugin.iconProvider().getIcon("player");
     MinimapIcon offscreenPlayerIcon = plugin.iconProvider().getIcon("offscreen_player");
@@ -118,9 +119,10 @@ public class MinimapListener implements Listener {
     return minimap;
   }
 
-  public void disableMinimap(Player player) {
-    playerSections.remove(player);
-    Minimap minimap = playerMinimaps.remove(player);
+  @Nullable
+  public Minimap disableMinimap(Player player) {
+    playerSections.remove(player.getUniqueId());
+    Minimap minimap = playerMinimaps.remove(player.getUniqueId());
     if (minimap != null) {
       MinimapLayerRenderer primaryRenderer = minimap.primaryLayer().renderer();
       if (primaryRenderer instanceof CacheableWorldMinimapRenderer cacheableRenderer) {
@@ -130,25 +132,26 @@ public class MinimapListener implements Listener {
     }
 
     closeFullscreen(player);
+    return minimap;
   }
 
   public SteerableLockedView openFullscreen(FullscreenMinimap minimap) {
     SteerableLockedView view = plugin.steerableViewFactory().lockedView(minimap.getHolder());
     minimap.spawn(plugin);
 
-    fullscreenMinimaps.put(minimap.getHolder(), minimap);
-    lockedViews.put(minimap.getHolder(), view);
+    fullscreenMinimaps.put(minimap.getHolder().getUniqueId(), minimap);
+    lockedViews.put(minimap.getHolder().getUniqueId(), view);
 
     return view;
   }
 
   public void closeFullscreen(Player player) {
-    SteerableLockedView view = lockedViews.remove(player);
+    SteerableLockedView view = lockedViews.remove(player.getUniqueId());
     if (view != null) {
       view.destroy();
     }
 
-    FullscreenMinimap fullscreenMinimap = fullscreenMinimaps.remove(player);
+    FullscreenMinimap fullscreenMinimap = fullscreenMinimaps.remove(player.getUniqueId());
     if (fullscreenMinimap != null) {
       fullscreenMinimap.despawn(plugin, null);
     }
@@ -160,7 +163,7 @@ public class MinimapListener implements Listener {
       return;
     }
 
-    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    Minimap minimap = playerMinimaps.get(event.getPlayer().getUniqueId());
     if (minimap == null) {
       return;
     }
@@ -182,25 +185,25 @@ public class MinimapListener implements Listener {
       return;
     }
 
-    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    Minimap minimap = playerMinimaps.get(event.getPlayer().getUniqueId());
     if (minimap == null) {
       return;
     }
 
-    IntIntImmutablePair previous = playerSections.get(event.getPlayer());
+    IntIntImmutablePair previous = playerSections.get(event.getPlayer().getUniqueId());
     int currentX = event.getTo().getBlockX() >> 7;
     int currentZ = event.getTo().getBlockZ() >> 7;
     boolean changedSection = previous == null || currentZ != previous.rightInt() || currentX != previous.leftInt();
     minimap.update(plugin, event.getTo().getX(), event.getTo().getZ(), changedSection);
     requestedUpdates.remove(event.getPlayer().getUniqueId());
     if (changedSection) {
-      playerSections.put(event.getPlayer(), IntIntImmutablePair.of(currentX, currentZ));
+      playerSections.put(event.getPlayer().getUniqueId(), IntIntImmutablePair.of(currentX, currentZ));
     }
   }
 
   @EventHandler
   public void onRespawn(PlayerPostRespawnEvent event) {
-    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    Minimap minimap = playerMinimaps.get(event.getPlayer().getUniqueId());
     if (minimap == null) {
       return;
     }
@@ -210,7 +213,7 @@ public class MinimapListener implements Listener {
 
   @EventHandler
   public void onWorldChange(PlayerChangedWorldEvent event) {
-    Minimap minimap = playerMinimaps.get(event.getPlayer());
+    Minimap minimap = playerMinimaps.get(event.getPlayer().getUniqueId());
     if (minimap == null) {
       return;
     }
@@ -221,9 +224,11 @@ public class MinimapListener implements Listener {
   @SneakyThrows
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
-    Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () ->
-        disableMinimap(event.getPlayer()));
-    Minimap minimap = playerMinimaps.get(event.getPlayer());
-    plugin.playerDataStorage().save(minimap);
+    Minimap minimap = disableMinimap(event.getPlayer());
+
+    // minimap can be null if player has it disabled
+    if (minimap != null) {
+      plugin.playerDataStorage().save(minimap);
+    }
   }
 }
