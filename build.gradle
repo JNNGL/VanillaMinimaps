@@ -30,6 +30,7 @@ dependencies {
     implementation("com.j256.ormlite:ormlite-jdbc:6.1")
     implementation("org.xerial:sqlite-jdbc:3.45.0.0")
     implementation("org.bstats:bstats-bukkit:3.0.2")
+    compileOnly(files("libs/VulcanAPI.jar"))
 }
 
 shadowJar {
