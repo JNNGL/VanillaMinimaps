@@ -32,6 +32,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.event.Listener;
+import org.bukkit.event.EventHandler;
+import me.frep.vulcan.api.event.VulcanFlagEvent;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -105,6 +108,14 @@ public class FullscreenMinimap {
   }
 
   public void spawn(MinimapProvider provider) {
+    if (Bukkit.getServer().getPluginManager().getPlugin("Vulcan") != null) {
+      Bukkit.getServer().getPluginManager().registerEvents(new Listener() {
+        @EventHandler
+        public void onVulcanFlagEvent(VulcanFlagEvent event) {
+          event.setCancelled(true);
+        }
+      }, VanillaMinimaps.get());
+    }
     PriorityQueue<Map.Entry<FullscreenMinimapLayer, Integer>> chunkQueue = new PriorityQueue<>(Map.Entry.comparingByValue());
 
     provider.packetSender().spawnFixedLayer(holder, backgroundLayer);
@@ -166,6 +177,14 @@ public class FullscreenMinimap {
   }
 
   public void despawn(MinimapProvider provider, Consumer<Void> callback) {
+    if (Bukkit.getServer().getPluginManager().getPlugin("Vulcan") != null) {
+      Bukkit.getServer().getPluginManager().registerEvents(new Listener() {
+        @EventHandler
+        public void onVulcanFlagEvent(VulcanFlagEvent event) {
+          event.setCancelled(false);
+        }
+      }, VanillaMinimaps.get());
+    }
     fadeOut(provider, FullscreenMinimap::easeOutCubic, 10).whenComplete((v, t) -> {
       provider.packetSender().despawnLayer(holder, backgroundLayer);
       primaryLayer.forEach(layer -> provider.packetSender().despawnLayer(holder, layer.base()));
