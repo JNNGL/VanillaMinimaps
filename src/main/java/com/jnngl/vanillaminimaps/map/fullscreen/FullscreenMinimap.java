@@ -34,6 +34,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
+import org.bukkit.scheduler.BukkitRunnable;
 import me.frep.vulcan.api.event.VulcanFlagEvent;
 
 import java.util.*;
@@ -62,6 +63,7 @@ public class FullscreenMinimap {
   private final int width;
   private final int height;
   private double transitionState;
+  private boolean despawnScheduled = false;
 
   private static double easeOutCubic(double x) {
     return 1 - Math.pow(1 - x, 3);
@@ -109,6 +111,10 @@ public class FullscreenMinimap {
 
   public void spawn(MinimapProvider provider) {
     if (Bukkit.getServer().getPluginManager().getPlugin("Vulcan") != null) {
+      if (despawnScheduled) {
+        Bukkit.getScheduler().cancelTasks(VanillaMinimaps.get());
+        despawnScheduled = false;
+      }
       Bukkit.getServer().getPluginManager().registerEvents(new Listener() {
         @EventHandler
         public void onVulcanFlagEvent(VulcanFlagEvent event) {
@@ -177,14 +183,6 @@ public class FullscreenMinimap {
   }
 
   public void despawn(MinimapProvider provider, Consumer<Void> callback) {
-    if (Bukkit.getServer().getPluginManager().getPlugin("Vulcan") != null) {
-      Bukkit.getServer().getPluginManager().registerEvents(new Listener() {
-        @EventHandler
-        public void onVulcanFlagEvent(VulcanFlagEvent event) {
-          event.setCancelled(false);
-        }
-      }, VanillaMinimaps.get());
-    }
     fadeOut(provider, FullscreenMinimap::easeOutCubic, 10).whenComplete((v, t) -> {
       provider.packetSender().despawnLayer(holder, backgroundLayer);
       primaryLayer.forEach(layer -> provider.packetSender().despawnLayer(holder, layer.base()));
@@ -192,6 +190,27 @@ public class FullscreenMinimap {
         callback.accept(null);
       }
     });
+    if (Bukkit.getServer().getPluginManager().getPlugin("Vulcan") != null) {
+      if (despawnScheduled) {
+        return;
+      }
+      new BukkitRunnable() {
+        @Override
+        public void run() {
+          Bukkit.getServer().getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onVulcanFlagEvent(VulcanFlagEvent event) {
+              event.setCancelled(false);
+            }
+          }, VanillaMinimaps.get());
+          despawnScheduled = false;
+          callback.accept(null);
+        }
+      }.runTaskLater(VanillaMinimaps.get(), 20 * 1);
+      despawnScheduled = true;
+    } else {
+      callback.accept(null);
+    }
   }
 
   public static FullscreenMinimap create(MinimapProvider provider, Minimap minimap, int segmentsX, int segmentsZ) {

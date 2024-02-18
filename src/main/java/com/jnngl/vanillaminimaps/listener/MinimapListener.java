@@ -153,7 +153,7 @@ public class MinimapListener implements Listener {
 
     FullscreenMinimap fullscreenMinimap = fullscreenMinimaps.remove(player.getUniqueId());
     if (fullscreenMinimap != null) {
-      fullscreenMinimap.despawn(plugin, null);
+      fullscreenMinimap.despawn(plugin, result -> {});
     }
   }
 
