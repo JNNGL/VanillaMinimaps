@@ -8,6 +8,8 @@ https://github.com/JNNGL/VanillaMinimaps/assets/45935949/4a6f9cf4-0575-4a46-852e
 
 https://github.com/JNNGL/VanillaMinimaps/assets/45935949/ea7738c9-bd4a-4388-9d65-109aa9233fcc
 
+https://github.com/JNNGL/VanillaMinimaps/assets/45935949/f64aed82-8193-4c3b-9c8f-be32dc3d6fa0
+
 **Supported server versions: 1.20.4**
 
 ### Features
@@ -39,11 +41,11 @@ https://github.com/JNNGL/VanillaMinimaps/assets/45935949/ea7738c9-bd4a-4388-9d65
 **This doesn't work with optifine/iris shaderpacks.**
 > Optifine/Iris override vanilla shaders. This can't be fixed.
 
-**This doesn't work on Bedrock.**
+**This doesn't work on Bedrock with Geyser.**
 > The plugin uses vanilla shaders to display the minimap, this is an exclusive feature for the Java Edition. 
 > Bedrock will never be supported by this plugin.
 
-**The minimap is not displayed with mod ...**
+**The minimap is not displayed correctly with mod <...>**
 > There are some mods that break the minimap, compatibility with some of them can be fixed and with some not. 
 > Check [Mods compatibility](https://github.com/JNNGL/VanillaMinimaps?tab=readme-ov-file#mods-compatibility) 
 > and [Issues](https://github.com/JNNGL/VanillaMinimaps/issues). If you haven't found any information for a mod 
