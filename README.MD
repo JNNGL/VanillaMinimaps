@@ -36,7 +36,7 @@ https://github.com/JNNGL/VanillaMinimaps/assets/45935949/f64aed82-8193-4c3b-9c8f
 **The plugin isn't working!!!!!! I get two maps, one above my chest and the other one above my head.**
 > This means that the resource pack is not installed properly, or you have iris/optifine shaders enabled. 
 > If you are using plugins like ItemsAdder, they may overwrite shaders in the resource pack, 
-> ask the dev of the plugin you are using.
+> ask the dev of the plugin you are using to manage the resource pack.
 
 **This doesn't work with optifine/iris shaderpacks.**
 > Optifine/Iris override vanilla shaders. This can't be fixed.
