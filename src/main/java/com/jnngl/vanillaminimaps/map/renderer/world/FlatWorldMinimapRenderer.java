@@ -24,24 +24,36 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_20_R3.block.CraftBlock;
 import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class FlatWorldMinimapRenderer implements CacheableWorldMinimapRenderer {
 
   private final WorldMapCache<FlatWorldMinimapRenderer> cache = new WorldMapCache<>(this);
 
   @Override
-  public void renderFully(World world, int blockX, int blockZ, byte[] data) {
-    for (int x = 0; x < 128; x++) {
-      for (int z = 0; z < 128; z++) {
-        int worldX = blockX + x;
-        int worldZ = blockZ + z;
-        int index = (127 - z) * 128 + (127 - x);
+  public void renderFully(World world, int centerX, int centerZ, byte[] data) {
+
+    int size = 256;
+    int step = (int) (size/128.0);
+
+    for (int x = 0; x < size; x+= step) {
+      for (int z = 0; z < size; z+= step) {
+
+        int worldX = centerX + x;
+        int worldZ = centerZ + z;
+
+        int index = (int) ((127 - z/step) * 128 + (127 - x/step));
+
         Block block = world.getHighestBlockAt(worldX, worldZ);
         storeBlockColor(data, index, block);
+
       }
     }
   }
