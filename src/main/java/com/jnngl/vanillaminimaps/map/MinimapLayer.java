@@ -19,7 +19,8 @@ package com.jnngl.vanillaminimaps.map;
 
 import com.jnngl.vanillaminimaps.clientside.EntityHandle;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapLayerRenderer;
+import net.minecraft.world.level.saveddata.maps.MapId;
 
-public record MinimapLayer(int mapId, EntityHandle<?> lowerFrame, EntityHandle<?> upperFrame, MinimapLayerRenderer renderer) {
+public record MinimapLayer(MapId mapId, EntityHandle<?> lowerFrame, EntityHandle<?> upperFrame, MinimapLayerRenderer renderer) {
 
 }

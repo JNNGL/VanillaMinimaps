@@ -26,8 +26,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_20_R3.block.CraftBlock;
-import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.block.CraftBlock;
+import org.bukkit.craftbukkit.block.data.CraftBlockData;
 
 public class FlatWorldMinimapRenderer implements CacheableWorldMinimapRenderer {
 

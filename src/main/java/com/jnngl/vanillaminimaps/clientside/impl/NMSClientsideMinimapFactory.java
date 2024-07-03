@@ -29,8 +29,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 
 import java.util.LinkedHashMap;
@@ -54,12 +56,15 @@ public class NMSClientsideMinimapFactory implements ClientsideMinimapFactory {
     int mapId = MAP_ID_COUNTER--;
 
     ItemStack item = new ItemStack(Items.FILLED_MAP);
-    item.getOrCreateTag().putInt("map", mapId);
+    Map<String, Integer> customDataMapId = new LinkedHashMap<>();
+    customDataMapId.put("map", mapId);
+    item.getItem().components().getOrDefault(DataComponents.CUSTOM_DATA, customDataMapId);
+//    item.getItem().components().getOrDefault(DataComponents.MAP_ID, customDataMapId);
 
     ItemFrame upperFrame = createLayerFrame(world, item, Direction.DOWN);
     ItemFrame lowerFrame = createLayerFrame(world, item, Direction.UP);
 
-    return new MinimapLayer(mapId, new EntityHandle<>(upperFrame), new EntityHandle<>(lowerFrame), renderer);
+    return new MinimapLayer(new MapId(mapId), new EntityHandle<>(upperFrame), new EntityHandle<>(lowerFrame), renderer);
   }
 
   @Override

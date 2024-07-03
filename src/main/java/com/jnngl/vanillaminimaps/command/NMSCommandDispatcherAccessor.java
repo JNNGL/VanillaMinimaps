@@ -20,11 +20,11 @@ package com.jnngl.vanillaminimaps.command;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
+import org.bukkit.craftbukkit.CraftServer;
 
 public class NMSCommandDispatcherAccessor {
 
   public static CommandDispatcher<CommandSourceStack> vanillaDispatcher() {
-    return ((CraftServer) Bukkit.getServer()).getServer().vanillaCommandDispatcher.getDispatcher();
+    return ((CraftServer) Bukkit.getServer()).getServer().getCommands().getDispatcher();
   }
 }
