@@ -14,10 +14,10 @@ if (texture(Sampler0, uv).xyz == vec3(112. / 255., 108. / 255., 138. / 255.)) {
     if (vratio < ratio) ratio = 1;
     else vratio = 1;
     switch (vertexId) {
-        case 0: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.04 * ratio, -1, 1); uv2 = vec2(0, 1); break; }
-        case 1: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.70 * ratio, -1, 1); uv2 = vec2(0, 0); break; }
-        case 2: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.70 * ratio, -1, 1); uv2 = vec2(1, 0); break; }
-        case 3: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.04 * ratio, -1, 1); uv2 = vec2(1, 1); break; }
+        case 0: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.04 * ratio, 0, 1); uv2 = vec2(0, 1); break; }
+        case 1: { gl_Position = vec4(-1 + 0.04 * vratio, 1 - 0.70 * ratio, 0, 1); uv2 = vec2(0, 0); break; }
+        case 2: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.70 * ratio, 0, 1); uv2 = vec2(1, 0); break; }
+        case 3: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.04 * ratio, 0, 1); uv2 = vec2(1, 1); break; }
     }
 
     vec3 local = IViewRotMat * vec3(1, 0, 0);
