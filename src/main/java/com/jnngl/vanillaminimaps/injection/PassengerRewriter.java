@@ -39,7 +39,7 @@ public class PassengerRewriter extends ChannelOutboundHandlerAdapter {
       if (passengers != null) {
         synchronized (passengers) {
           FriendlyByteBuf buf = new FriendlyByteBuf(ctx.alloc().ioBuffer());
-          buf.writeVarInt(0x5D); // Packet ID
+          buf.writeVarInt(0x5F); // Packet ID
           buf.writeVarInt(packet.getVehicle()); // Vehicle ID
           buf.writeVarInt(packet.getPassengers().length + passengers.size()); // Passenger count
           for (int passenger : packet.getPassengers()) {

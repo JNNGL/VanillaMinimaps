@@ -22,15 +22,18 @@ import com.jnngl.vanillaminimaps.clientside.AbstractMinimapPacketSender;
 import com.jnngl.vanillaminimaps.clientside.EntityHandle;
 import com.jnngl.vanillaminimaps.injection.PassengerRewriter;
 import com.jnngl.vanillaminimaps.map.MinimapLayer;
+import java.util.Set;
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
@@ -46,13 +49,14 @@ public class NMSMinimapPacketSender extends AbstractMinimapPacketSender {
   @Override
   public void updateLayer(Player viewer, MinimapLayer layer, int x, int y, int width, int height, byte[] data) {
     MapItemSavedData.MapPatch patch = new MapItemSavedData.MapPatch(x, y, width, height, data);
-    ((CraftPlayer) viewer).getHandle().connection.send(new ClientboundMapItemDataPacket(layer.mapId(), (byte) 0, false, Collections.emptyList(), patch));
+    ((CraftPlayer) viewer).getHandle().connection.send(
+        new ClientboundMapItemDataPacket(new MapId(layer.mapId()), (byte) 0, false, Collections.emptyList(), patch));
   }
 
   private void spawnItemFrame(ServerPlayerConnection connection, ItemFrame itemFrame, double offsetY) {
     ServerPlayer player = connection.getPlayer();
     itemFrame.setPos(player.getX(), player.getY() + offsetY, player.getZ());
-    connection.send(itemFrame.getAddEntityPacket());
+    connection.send(itemFrame.getAddEntityPacket(new ServerEntity(null, itemFrame, 0, false, p -> {}, Set.of())));
     var metadata = itemFrame.getEntityData().getNonDefaultValues();
     if (metadata != null && !metadata.isEmpty()) {
       connection.send(new ClientboundSetEntityDataPacket(itemFrame.getId(), metadata));

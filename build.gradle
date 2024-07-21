@@ -1,12 +1,12 @@
 plugins {
     id("java")
-    id("io.papermc.paperweight.userdev").version("1.5.11")
-    id("xyz.jpenilla.run-paper").version("2.2.2")
-    id("com.github.johnrengelman.shadow").version("7.1.2")
+    id("io.papermc.paperweight.userdev").version("1.7.1")
+    id("xyz.jpenilla.run-paper").version("2.3.0")
+    id("io.github.goooler.shadow").version("8.1.7")
 }
 
 setGroup("com.jnngl")
-setVersion("1.0.1-SNAPSHOT")
+setVersion("1.0.1")
 
 repositories {
     mavenCentral()
@@ -21,10 +21,10 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.20.4-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21-R0.1-SNAPSHOT")
     implementation("net.elytrium:serializer:1.1.1")
     implementation("com.jnngl:mapcolor:1.0.1")
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
     annotationProcessor("org.projectlombok:lombok:1.18.30")
     compileOnly("org.projectlombok:lombok:1.18.30")
     implementation("com.j256.ormlite:ormlite-jdbc:6.1")
@@ -39,7 +39,7 @@ shadowJar {
     minimize()
 }
 
-def targetJavaVersion = 17
+def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     setSourceCompatibility(javaVersion)
