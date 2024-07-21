@@ -27,6 +27,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
@@ -34,8 +35,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -80,7 +81,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
             viewer.getUUID(), viewer.getGameProfile(),
             false, 0, GameType.CREATIVE, null, null)
     )));
-    connection.send(viewer.getAddEntityPacket());
+    connection.send(viewer.getAddEntityPacket(new ServerEntity(viewer.serverLevel(), viewer, 0, false, p -> {}, Set.of())));
     connection.send(new ClientboundRotateHeadPacket(viewer, convertAngle(player.getYaw())));
     List<SynchedEntityData.DataValue<?>> metadata = viewer.getEntityData().getNonDefaultValues();
     if (metadata != null && !metadata.isEmpty()) {

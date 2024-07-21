@@ -20,7 +20,7 @@ if (texture(Sampler0, uv).xyz == vec3(112. / 255., 108. / 255., 138. / 255.)) {
         case 3: { gl_Position = vec4(-1 + 0.70 * vratio, 1 - 0.04 * ratio, 0, 1); uv2 = vec2(1, 1); break; }
     }
 
-    vec3 local = IViewRotMat * vec3(1, 0, 0);
+    vec3 local = transpose(mat3(ModelViewMat)) * vec3(1, 0, 0);
     float yaw = -atan(local.x, local.z);
 
     float vx = decodeFixedPoint(1, 0);
