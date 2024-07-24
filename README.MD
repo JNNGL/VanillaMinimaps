@@ -21,7 +21,7 @@ https://github.com/JNNGL/VanillaMinimaps/assets/45935949/f64aed82-8193-4c3b-9c8f
 - Better map colors
 - Configurable markers
 - Fullscreen map view
-- Custom blocks support
+- Configurable blockstate colors
 
 ### Mods compatibility
 
