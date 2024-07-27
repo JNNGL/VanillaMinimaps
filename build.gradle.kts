@@ -36,6 +36,7 @@ dependencies {
 
 tasks {
     shadowJar {
+        archiveClassifier.set("")
         relocate("net.elytrium.serializer", "com.jnngl.vanillaminimaps.serializer")
         relocate("org.bstats", "com.jnngl.vanillaminimaps.metrics")
         exclude("org/slf4j/**")
@@ -53,7 +54,8 @@ tasks {
         }
     }
 
-    reobfJar {
+    assemble {
+        dependsOn(reobfJar)
         dependsOn(shadowJar)
     }
 }
