@@ -8,6 +8,8 @@ plugins {
 group = "com.jnngl"
 version = "1.0.1"
 
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+
 repositories {
     mavenCentral()
     maven {
@@ -32,11 +34,6 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
 }
 
-java {
-    val version = JavaLanguageVersion.of(21)
-    toolchain.languageVersion.set(version)
-}
-
 tasks {
     shadowJar {
         relocate("net.elytrium.serializer", "com.jnngl.vanillaminimaps.serializer")
@@ -45,12 +42,14 @@ tasks {
         minimize()
     }
 
+    compileJava {
+        options.encoding = "UTF-8"
+    }
+
     processResources {
-        val props = mapOf("version" to version)
-        inputs.properties(props)
         filteringCharset = "UTF-8"
         filesMatching("plugin.yml") {
-            expand(props)
+            expand("version" to version)
         }
     }
 
