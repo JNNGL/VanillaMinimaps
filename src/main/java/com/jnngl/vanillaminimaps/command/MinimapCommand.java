@@ -17,6 +17,7 @@
 
 package com.jnngl.vanillaminimaps.command;
 
+import com.google.common.collect.ImmutableList;
 import com.jnngl.vanillaminimaps.VanillaMinimaps;
 import com.jnngl.vanillaminimaps.clientside.SteerableLockedView;
 import com.jnngl.vanillaminimaps.config.Config;
@@ -30,6 +31,7 @@ import com.jnngl.vanillaminimaps.map.marker.MarkerMinimapLayer;
 import com.jnngl.vanillaminimaps.map.renderer.MinimapIconRenderer;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandExceptionType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -37,10 +39,14 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.selector.EntitySelector;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -63,73 +69,108 @@ public class MinimapCommand extends BrigadierCommand {
     dispatcher.register(
         Commands.literal("minimap")
             .then(Commands.literal("enable")
-                .executes(this::enable))
+                .executes(context -> enable(context, sourceAsSinglePlayer(context)))
+                .then(targetsExecute(this::enable)))
             .then(Commands.literal("disable")
-                .executes(this::disable))
+                .executes(context -> disable(context, sourceAsSinglePlayer(context)))
+                .then(targetsExecute(this::disable)))
             .then(positionLiteral)
             .then(Commands.literal("marker")
                 .then(Commands.literal("add")
                     .then(Commands.argument("name", StringArgumentType.string())
                         .then(Commands.argument("icon", StringArgumentType.string())
                             .suggests(this::suggestIcons)
-                            .executes(this::addMarker))))
+                            .executes(context -> addMarker(context, sourceAsSinglePlayer(context)))
+                            .then(targetsExecute(this::addMarker)))))
                 .then(Commands.literal("set")
                     .then(Commands.argument("name", StringArgumentType.string())
                         .suggests(this::suggestMarkers)
                         .then(Commands.literal("icon")
                             .then(Commands.argument("icon", StringArgumentType.string())
                                 .suggests(this::suggestIcons)
-                                .executes(this::changeMarkerIcon)))
+                                .executes(context -> changeMarkerIcon(context, sourceAsSinglePlayer(context)))
+                                .then(targetsExecute(this::changeMarkerIcon))))
                         .then(Commands.literal("name")
                             .then(Commands.argument("new_name", StringArgumentType.string())
-                                .executes(this::renameMarker)))))
+                                .executes(context -> renameMarker(context, sourceAsSinglePlayer(context)))
+                                .then(targetsExecute(this::renameMarker))))))
                 .then(Commands.literal("remove")
                     .then(Commands.argument("name", StringArgumentType.string())
                         .suggests(this::suggestMarkers)
-                        .executes(this::removeMarker))))
+                        .executes(context -> removeMarker(context, sourceAsSinglePlayer(context)))
+                        .then(targetsExecute(this::removeMarker))))
             .then(Commands.literal("fullscreen")
-                .executes(this::fullscreen))
+                .executes(context -> fullscreen(context, sourceAsSinglePlayer(context)))
+                .then(targetsExecute(this::fullscreen))))
     );
   }
 
-  private void save(Minimap minimap) throws CommandSyntaxException {
+  @FunctionalInterface
+  private interface MultiTargetCommand {
+    int run(CommandContext<CommandSourceStack> context, Collection<ServerPlayer> targets) throws CommandSyntaxException;
+  }
+
+  private static RequiredArgumentBuilder<CommandSourceStack, EntitySelector> targetsExecute(final MultiTargetCommand command) {
+    return Commands.argument("targets", EntityArgument.players())
+            .requires(source -> source.hasPermission(2))
+            .executes(context -> command.run(context, EntityArgument.getPlayers(context, "targets")));
+  }
+
+  private static Collection<ServerPlayer> sourceAsSinglePlayer(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    return ImmutableList.of(context.getSource().getPlayerOrException());
+  }
+  
+  private boolean save(Minimap minimap) {
     try {
       getPlugin().playerDataStorage().save(minimap);
-    } catch (Exception e) {
+      return true;
+    } catch (Throwable e) {
       e.printStackTrace();
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to save player data.");
+      return false;
     }
   }
 
-  private int enable(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+  private int enable(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
+    int affected = 0;
 
-    try {
-      getPlugin().playerDataStorage().enableMinimap(player);
-      getPlugin().playerDataStorage().restore(getPlugin(), player);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to load player data.");
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      try {
+        getPlugin().playerDataStorage().enableMinimap(player);
+        getPlugin().playerDataStorage().restore(getPlugin(), player);
+      } catch (Throwable e) {
+        e.printStackTrace();
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Unable to load player data, see console for error"));
+        continue;
+      }
+
+      affected++;
     }
 
-    return 1;
+    return affected;
   }
 
-  private int disable(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+  private int disable(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
+    int affected = 0;
 
-    getPlugin().minimapListener().disableMinimap(player);
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
 
-    try {
-      getPlugin().playerDataStorage().disableMinimap(player);
-    } catch (SQLException e) {
-      e.printStackTrace();
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to save player data.");
+      getPlugin().minimapListener().disableMinimap(player);
+
+      try {
+        getPlugin().playerDataStorage().disableMinimap(player);
+      } catch (SQLException e) {
+        e.printStackTrace();
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Unable to save player data, see console for error"));
+        continue;
+      }
+
+      affected++;
     }
 
-    return 1;
+    return affected;
   }
 
   private int position(CommandContext<CommandSourceStack> ctx, MinimapScreenPosition position) throws CommandSyntaxException {
@@ -138,12 +179,15 @@ public class MinimapCommand extends BrigadierCommand {
 
     Minimap minimap = getPlugin().getPlayerMinimap(player);
     if (minimap == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled");
     }
 
     minimap.screenPosition(position);
     minimap.update(getPlugin());
-    save(minimap);
+
+    if (!save(minimap)) {
+      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Unable to save player data, see console for error");
+    }
 
     return 1;
   }
@@ -201,149 +245,203 @@ public class MinimapCommand extends BrigadierCommand {
     return icon;
   }
 
-  private void modifyMarker(Player player, String markerName, BiConsumer<Minimap, SecondaryMinimapLayer> consumer) throws CommandSyntaxException {
+  private boolean modifyMarker(CommandSourceStack source,
+                               Player player,
+                               String markerName,
+                               BiConsumer<Minimap, SecondaryMinimapLayer> consumer) throws CommandSyntaxException {
     Minimap minimap = getPlugin().getPlayerMinimap(player);
     if (minimap == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+      source.sendFailure(Component.literal(player.getName() + ": Minimap is disabled"));
+      return false;
     }
 
     if ("player".equals(markerName) || "death_point".equals(markerName)) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "This marker cannot be modified.");
+      source.sendFailure(Component.literal(player.getName() + ": This marker cannot be modified"));
+      return false;
     }
 
     SecondaryMinimapLayer marker = minimap.secondaryLayers().get(markerName);
     if (marker == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "There is no such marker.");
+      source.sendFailure(Component.literal(player.getName() + ": There is no such marker"));
+      return false;
     }
 
     consumer.accept(minimap, marker);
     minimap.update(getPlugin());
-    save(minimap);
+
+    if (!save(minimap)) {
+      source.sendFailure(Component.literal(player.getName() + ": Unable to save player data, see console for error"));
+      return false;
+    }
+
+    return true;
   }
 
-  private int changeMarkerIcon(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+  private int changeMarkerIcon(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
     String markerName = StringArgumentType.getString(ctx, "name");
     String iconName = StringArgumentType.getString(ctx, "icon");
 
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
-
     MinimapIcon icon = minimapIcon(iconName);
 
-    modifyMarker(player, markerName, (minimap, marker) ->
-        marker.setRenderer(new MinimapIconRenderer(icon)));
+    int affected = 0;
 
-    return 1;
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      if(modifyMarker(ctx.getSource(), player, markerName, (minimap, marker) -> {
+        marker.setRenderer(new MinimapIconRenderer(icon));
+      })) {
+        affected++;
+      }
+    }
+
+    return affected;
   }
 
-  private int renameMarker(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+  private int renameMarker(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
     String markerName = StringArgumentType.getString(ctx, "name");
     String newMarkerName = StringArgumentType.getString(ctx, "new_name");
 
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+    int affected = 0;
 
-    modifyMarker(player, markerName, (minimap, marker) -> {
-      if (minimap.secondaryLayers().remove(markerName, marker)) {
-        minimap.secondaryLayers().put(newMarkerName, marker);
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      if (modifyMarker(ctx.getSource(), player, markerName, (minimap, marker) -> {
+        if (minimap.secondaryLayers().remove(markerName, marker)) {
+          minimap.secondaryLayers().put(newMarkerName, marker);
+        }
+      })) {
+        affected++;
       }
-    });
+    }
 
-    return 1;
+    return affected;
   }
 
-  private int removeMarker(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+  private int removeMarker(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
     String markerName = StringArgumentType.getString(ctx, "name");
 
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+    int affected = 0;
 
-    Minimap minimap = getPlugin().getPlayerMinimap(player);
-    if (minimap == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      Minimap minimap = getPlugin().getPlayerMinimap(player);
+      if (minimap == null) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Minimap is disabled"));
+        continue;
+      }
+
+      if ("player".equals(markerName) || "death_point".equals(markerName)) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": This marker cannot be removed"));
+        continue;
+      }
+
+      SecondaryMinimapLayer marker = minimap.secondaryLayers().remove(markerName);
+      if (marker == null) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": There is no such marker"));
+        continue;
+      }
+
+      getPlugin().packetSender().despawnLayer(minimap.holder(), marker.getBaseLayer());
+      minimap.update(getPlugin());
+
+      if (!save(minimap)) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Unable to save player data, see console for error"));
+        continue;
+      }
+
+      affected++;
     }
 
-    if ("player".equals(markerName) || "death_point".equals(markerName)) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "This marker cannot be removed.");
-    }
-
-    SecondaryMinimapLayer marker = minimap.secondaryLayers().remove(markerName);
-    if (marker == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "There is no such marker.");
-    }
-
-    getPlugin().packetSender().despawnLayer(minimap.holder(), marker.getBaseLayer());
-    minimap.update(getPlugin());
-    save(minimap);
-
-    return 1;
+    return affected;
   }
 
-  private int addMarker(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+  private int addMarker(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
     String markerName = StringArgumentType.getString(ctx, "name");
     String iconName = StringArgumentType.getString(ctx, "icon");
 
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+    int affected = 0;
 
-    Minimap minimap = getPlugin().getPlayerMinimap(player);
-    if (minimap == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      Minimap minimap = getPlugin().getPlayerMinimap(player);
+      if (minimap == null) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Minimap is disabled"));
+        continue;
+      }
+
+      MinimapIcon icon = minimapIcon(iconName);
+
+      if ("player".equals(markerName) || "death_point".equals(markerName)) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": This marker name is unavailable"));
+        continue;
+      }
+
+      if (minimap.secondaryLayers().containsKey(markerName)) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Marker with this name already exists"));
+        continue;
+      }
+
+      int markers = (int) minimap.secondaryLayers().entrySet().stream()
+              .filter(entry -> !"player".equals(entry.getKey())
+                      && !"death_point".equals(entry.getKey())
+                      && entry.getValue() instanceof MarkerMinimapLayer)
+              .count();
+
+      if (markers >= Config.instance().markers.customMarkers.limit) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": You cannot place more than " +
+                Config.instance().markers.customMarkers.limit + " markers."));
+        continue;
+      }
+
+      float depth = 0.05F + minimap.secondaryLayers().size() * 0.01F;
+      MinimapLayer iconBaseLayer = getPlugin().clientsideMinimapFactory().createMinimapLayer(player.getWorld(), null);
+      SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
+              Config.instance().markers.customMarkers.stickToBorder, player.getWorld(), (int) player.getX(), (int) player.getZ(), depth);
+      minimap.secondaryLayers().put(markerName, iconLayer);
+
+      getPlugin().packetSender().spawnLayer(player, iconBaseLayer);
+      minimap.update(getPlugin());
+
+      if (!save(minimap)) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Unable to save player data, see console for error"));
+        continue;
+      }
+
+      affected++;
     }
 
-    MinimapIcon icon = minimapIcon(iconName);
-
-    if ("player".equals(markerName) || "death_point".equals(markerName)) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "This marker name is unavailable.");
-    }
-
-    if (minimap.secondaryLayers().containsKey(markerName)) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Marker with this name already exists.");
-    }
-
-    int markers = (int) minimap.secondaryLayers().entrySet().stream()
-        .filter(entry -> !"player".equals(entry.getKey())
-            && !"death_point".equals(entry.getKey())
-            && entry.getValue() instanceof MarkerMinimapLayer)
-        .count();
-
-    if (markers >= Config.instance().markers.customMarkers.limit) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () ->
-          "You cannot place more than " + Config.instance().markers.customMarkers.limit + " markers.");
-    }
-
-    float depth = 0.05F + minimap.secondaryLayers().size() * 0.01F;
-    MinimapLayer iconBaseLayer = getPlugin().clientsideMinimapFactory().createMinimapLayer(player.getWorld(), null);
-    SecondaryMinimapLayer iconLayer = new MarkerMinimapLayer(iconBaseLayer, new MinimapIconRenderer(icon), true,
-        Config.instance().markers.customMarkers.stickToBorder, player.getWorld(), (int) player.getX(), (int) player.getZ(), depth);
-    minimap.secondaryLayers().put(markerName, iconLayer);
-
-    getPlugin().packetSender().spawnLayer(player, iconBaseLayer);
-    minimap.update(getPlugin());
-    save(minimap);
-
-    return 1;
+    return affected;
   }
 
-  private int fullscreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-    ServerPlayer serverPlayer = ctx.getSource().getPlayerOrException();
-    Player player = serverPlayer.getBukkitEntity();
+  private int fullscreen(CommandContext<CommandSourceStack> ctx, Collection<ServerPlayer> targets) throws CommandSyntaxException {
+    int affected = 0;
 
-    Minimap minimap = getPlugin().getPlayerMinimap(player);
-    if (minimap == null) {
-      throw new CommandSyntaxException(new CommandExceptionType() {}, () -> "Minimap is disabled.");
+    for (ServerPlayer serverPlayer : targets) {
+      Player player = serverPlayer.getBukkitEntity();
+
+      Minimap minimap = getPlugin().getPlayerMinimap(player);
+      if (minimap == null) {
+        ctx.getSource().sendFailure(Component.literal(player.getName() + ": Minimap is disabled"));
+        continue;
+      }
+
+      if (getPlugin().getFullscreenMinimap(player) != null) {
+        getPlugin().minimapListener().closeFullscreen(player);
+        continue;
+      }
+
+      FullscreenMinimap fullscreenMinimap = FullscreenMinimap.create(getPlugin(), minimap);
+      SteerableLockedView view = getPlugin().minimapListener().openFullscreen(fullscreenMinimap);
+
+      view.onSneak(v -> getPlugin().minimapListener().closeFullscreen(player));
+
+      affected++;
     }
 
-    if (getPlugin().getFullscreenMinimap(player) != null) {
-      getPlugin().minimapListener().closeFullscreen(player);
-      return 1;
-    }
-
-    FullscreenMinimap fullscreenMinimap = FullscreenMinimap.create(getPlugin(), minimap);
-    SteerableLockedView view = getPlugin().minimapListener().openFullscreen(fullscreenMinimap);
-
-    view.onSneak(v -> getPlugin().minimapListener().closeFullscreen(player));
-
-    return 1;
+    return affected;
   }
 }
