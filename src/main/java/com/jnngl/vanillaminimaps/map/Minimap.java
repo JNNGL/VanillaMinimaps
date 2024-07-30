@@ -72,14 +72,14 @@ public final class Minimap {
         offsetZ += 128;
       }
       byte[] data = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX, alignedZ);
-      byte[] dataRight = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX + 128, alignedZ);
-      byte[] dataUpRight = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX + 128, alignedZ + 128);
-      byte[] dataUp = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX, alignedZ + 128);
+      byte[] dataRight = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX + 256, alignedZ);
+      byte[] dataUpRight = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX + 256, alignedZ + 256);
+      byte[] dataUp = cacheableRenderer.getWorldMapCache().get(holder.getWorld(), alignedX, alignedZ + 256);
       LongList usedChunks = LongList.of(
           WorldMapCache.getKey(holder.getWorld(), alignedTrackX, alignedTrackZ),
-          WorldMapCache.getKey(holder.getWorld(), alignedTrackX + 128, alignedTrackZ),
-          WorldMapCache.getKey(holder.getWorld(), alignedTrackX + 128, alignedTrackZ + 128),
-          WorldMapCache.getKey(holder.getWorld(), alignedTrackX, alignedTrackZ + 128)
+          WorldMapCache.getKey(holder.getWorld(), alignedTrackX + 256, alignedTrackZ),
+          WorldMapCache.getKey(holder.getWorld(), alignedTrackX + 256, alignedTrackZ + 256),
+          WorldMapCache.getKey(holder.getWorld(), alignedTrackX, alignedTrackZ + 256)
       );
       for (int z = 0; z < 128; z++) {
         for (int x = 0; x < 128; x++) {
