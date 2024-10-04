@@ -23,22 +23,20 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21.1-R0.1-SNAPSHOT")
     implementation("net.elytrium:serializer:1.1.1")
     implementation("com.jnngl:mapcolor:1.0.1")
-    compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
     annotationProcessor("org.projectlombok:lombok:1.18.30")
     compileOnly("org.projectlombok:lombok:1.18.30")
     implementation("com.j256.ormlite:ormlite-jdbc:6.1")
     implementation("org.xerial:sqlite-jdbc:3.45.0.0")
-    implementation("org.bstats:bstats-bukkit:3.0.2")
 }
 
 tasks {
     shadowJar {
         archiveClassifier.set("")
         relocate("net.elytrium.serializer", "com.jnngl.vanillaminimaps.serializer")
-        relocate("org.bstats", "com.jnngl.vanillaminimaps.metrics")
         exclude("org/slf4j/**")
         minimize()
     }
