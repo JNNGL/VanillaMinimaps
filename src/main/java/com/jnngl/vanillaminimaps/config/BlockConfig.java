@@ -43,7 +43,7 @@ public class BlockConfig extends YamlSerializable {
       resolvedOverrides = new HashMap<>();
       blockOverrides.forEach((key, value) -> {
         try {
-          var lookup = BuiltInRegistries.BLOCK.asLookup();
+          var lookup = BuiltInRegistries.BLOCK;
           BlockStateParser.BlockResult block = BlockStateParser.parseForBlock(lookup, new StringReader(key), false);
           MapColor color;
           try {

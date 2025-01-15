@@ -64,16 +64,16 @@ public class VanillaWorldMinimapRenderer implements CacheableWorldMinimapRendere
       blockPos1.set(worldX, 0, worldZ);
       int k3 = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, blockPos1.getX(), blockPos1.getZ()) + 1;
       BlockState blockState;
-      if (k3 <= level.getMinBuildHeight() + 1) {
+      if (k3 <= level.getMinY() + 1) {
         blockState = Blocks.BEDROCK.defaultBlockState();
       } else {
         do {
           --k3;
           blockPos1.setY(k3);
           blockState = chunk.getBlockState(blockPos1);
-        } while (blockState.getMapColor(level, blockPos1) == MapColor.NONE && k3 > level.getMinBuildHeight());
+        } while (blockState.getMapColor(level, blockPos1) == MapColor.NONE && k3 > level.getMinY());
 
-        if (k3 > level.getMinBuildHeight() && !blockState.getFluidState().isEmpty()) {
+        if (k3 > level.getMinY() && !blockState.getFluidState().isEmpty()) {
           int l3 = k3 - 1;
           blockPos2.set(blockPos1);
 
@@ -82,7 +82,7 @@ public class VanillaWorldMinimapRenderer implements CacheableWorldMinimapRendere
             blockPos2.setY(l3--);
             iblockdata1 = chunk.getBlockState(blockPos2);
             l2.incrementAndGet();
-          } while (l3 > level.getMinBuildHeight() && !iblockdata1.getFluidState().isEmpty());
+          } while (l3 > level.getMinY() && !iblockdata1.getFluidState().isEmpty());
 
           blockState = this.getCorrectStateForFluidBlock(level, blockState, blockPos1);
         }
