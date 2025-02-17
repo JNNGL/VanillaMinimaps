@@ -79,7 +79,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER), List.of(
         new ClientboundPlayerInfoUpdatePacket.Entry(
             viewer.getUUID(), viewer.getGameProfile(),
-            false, 0, GameType.CREATIVE, null, null)
+            false, 0, GameType.CREATIVE, null, false, 0, null)
     )));
     connection.send(viewer.getAddEntityPacket(new ServerEntity(viewer.serverLevel(), viewer, 0, false, p -> {}, Set.of())));
     connection.send(new ClientboundRotateHeadPacket(viewer, convertAngle(player.getYaw())));
@@ -90,7 +90,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
 
     connection.send(new ClientboundPlayerInfoUpdatePacket(
         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE),
-        new ClientboundPlayerInfoUpdatePacket.Entry(serverPlayer.getUUID(), null, true, 0, GameType.ADVENTURE, null, null))
+        new ClientboundPlayerInfoUpdatePacket.Entry(serverPlayer.getUUID(), null, true, 0, GameType.ADVENTURE, null, false, 0, null))
     );
     connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, GameType.SPECTATOR.getId()));
 
@@ -130,7 +130,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
                   ServerboundSetCommandMinecartPacket.class,
                   ServerboundUseItemPacket.class,
                   ServerboundUseItemOnPacket.class,
-                  ServerboundPickItemPacket.class,
+                  ServerboundPickItemFromEntityPacket.class,
                   ServerboundPlaceRecipePacket.class,
                   ServerboundRenameItemPacket.class,
                   ServerboundPlayerActionPacket.class,
@@ -149,7 +149,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
             }
 
             if (msg instanceof ServerboundPlayerInputPacket packet) {
-              if (packet.isShiftKeyDown()) {
+              if (packet.input().shift()) {
                 if (sneakCallback != null) {
                   sneakCallback.accept(null);
                 }
@@ -203,7 +203,7 @@ public class NMSSteerableLockedView implements SteerableLockedView {
 
     connection.send(new ClientboundPlayerInfoUpdatePacket(
         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE),
-        new ClientboundPlayerInfoUpdatePacket.Entry(serverPlayer.getUUID(), null, true, 0, serverPlayer.gameMode.getGameModeForPlayer(), null, null))
+        new ClientboundPlayerInfoUpdatePacket.Entry(serverPlayer.getUUID(), null, true, 0, serverPlayer.gameMode.getGameModeForPlayer(), null, true, 0, null))
     );
     connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, serverPlayer.gameMode.getGameModeForPlayer().getId()));
 

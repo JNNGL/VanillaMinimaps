@@ -1,8 +1,8 @@
 plugins {
     java
-    id("io.papermc.paperweight.userdev").version("1.7.1")
-    id("xyz.jpenilla.run-paper").version("2.3.0")
-    id("io.github.goooler.shadow").version("8.1.7")
+    id("io.papermc.paperweight.userdev").version("2.0.0-beta.8")
+    id("xyz.jpenilla.run-paper").version("2.3.1")
+    id("com.gradleup.shadow").version("9.0.0-beta4")
 }
 
 group = "com.jnngl"
@@ -23,10 +23,10 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21.1-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21.4-R0.1-SNAPSHOT")
     implementation("net.elytrium:serializer:1.1.1")
     implementation("com.jnngl:mapcolor:1.0.1")
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
     annotationProcessor("org.projectlombok:lombok:1.18.30")
     compileOnly("org.projectlombok:lombok:1.18.30")
     implementation("com.j256.ormlite:ormlite-jdbc:6.1")
@@ -51,9 +51,8 @@ tasks {
             expand("version" to version)
         }
     }
+}
 
-    assemble {
-        dependsOn(reobfJar)
-        dependsOn(shadowJar)
-    }
+tasks.named("build") {
+    finalizedBy("shadowJar")
 }
