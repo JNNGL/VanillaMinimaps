@@ -1,8 +1,8 @@
 plugins {
     java
     id("io.papermc.paperweight.userdev").version("2.0.0-beta.8")
-    id("xyz.jpenilla.run-paper").version("2.3.0")
-    id("io.github.goooler.shadow").version("8.1.7")
+    id("xyz.jpenilla.run-paper").version("2.3.1")
+    id("com.gradleup.shadow").version("9.0.0-beta4")
 }
 
 group = "com.jnngl"
@@ -51,9 +51,8 @@ tasks {
             expand("version" to version)
         }
     }
+}
 
-    assemble {
-        dependsOn(reobfJar)
-        dependsOn(shadowJar)
-    }
+tasks.named("build") {
+    finalizedBy("shadowJar")
 }
